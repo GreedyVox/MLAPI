@@ -9,9 +9,9 @@
 Assets/*
 !Assets/GreedyVox/
 Assets/GreedyVox/*
-!Assets/GreedyVox/Networked/
-Assets/GreedyVox/Networked/*
-!Assets/GreedyVox/Networked/Scripts/
+!Assets/GreedyVox/NetCode/
+Assets/GreedyVox/NetCode/*
+!Assets/GreedyVox/NetCode/Scripts/
 
 # Never ignore Asset meta data
 ![Aa]ssets/**/*.meta
