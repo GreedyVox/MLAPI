@@ -124,10 +124,7 @@ namespace GreedyVox.NetCode.Character
         /// <summary>
         /// Returns the maximus size for the fast buffer writer
         /// </summary>               
-        private int MaxBufferSize()
-        {
-            return sizeof(byte) + sizeof(long) + sizeof(float) * 3 * 4;
-        }
+        private int MaxBufferSize() => sizeof(byte) + sizeof(long) + sizeof(float) * 3 * 4;
         /// <summary>
         /// Network sync event called from the NetworkInfo component
         /// </summary>
@@ -135,15 +132,9 @@ namespace GreedyVox.NetCode.Character
         {
             // Error handling if this function still executing after despawning event
             if (NetworkManager.Singleton.IsClient)
-            {
                 using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
-                {
                     if (Serialize())
-                    {
                         m_CustomMessagingManager?.SendNamedMessage(m_MsgNameServer, m_ServerID, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
-                    }
-                }
-            }
         }
         /// <summary>
         /// Network broadcast event called from the NetworkInfo component
@@ -154,19 +145,15 @@ namespace GreedyVox.NetCode.Character
             if (NetworkManager.Singleton.IsServer)
             {
                 using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
-                {
                     if (IsOwner)
                     {
                         if (Serialize())
-                        {
                             m_CustomMessagingManager?.SendNamedMessage(m_MsgNameClient, m_Clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
-                        }
                     }
                     else if (Serialize(ref m_Flag))
                     {
                         m_CustomMessagingManager?.SendNamedMessage(m_MsgNameClient, m_Clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
                     }
-                }
                 m_Flag = 0;
             }
         }
@@ -181,9 +168,8 @@ namespace GreedyVox.NetCode.Character
             if (m_CharacterLocomotion.MovingPlatform != null)
             {
 #if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER
-                if (m_CharacterFootEffects != null && (m_NetworkPlatformPrevRelativePosition - m_NetworkPlatformRelativePosition).sqrMagnitude > 0.01f) {
+                if (m_CharacterFootEffects != null && (m_NetworkPlatformPrevRelativePosition - m_NetworkPlatformRelativePosition).sqrMagnitude > 0.01f) 
                     m_CharacterFootEffects.CanPlaceFootstep = true;
-                }
 #endif
                 m_NetworkPlatformPrevRelativePosition = Vector3.MoveTowards(m_NetworkPlatformPrevRelativePosition, m_NetworkPlatformRelativePosition, m_Distance * serializationRate);
                 m_CharacterLocomotion.SetPosition(m_CharacterLocomotion.MovingPlatform.TransformPoint(m_NetworkPlatformPrevRelativePosition), false);
@@ -194,9 +180,8 @@ namespace GreedyVox.NetCode.Character
             else
             {
 #if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER
-                if (m_CharacterFootEffects != null && (m_Transform.position - m_NetworkPosition).sqrMagnitude > 0.01f) {
+                if (m_CharacterFootEffects != null && (m_Transform.position - m_NetworkPosition).sqrMagnitude > 0.01f) 
                     m_CharacterFootEffects.CanPlaceFootstep = true;
-                }
 #endif
                 m_Transform.position = Vector3.MoveTowards(m_Transform.position, m_NetworkPosition, m_Distance * serializationRate);
                 m_Transform.rotation = Quaternion.RotateTowards(m_Transform.rotation, m_NetworkRotation, m_Angle * serializationRate);

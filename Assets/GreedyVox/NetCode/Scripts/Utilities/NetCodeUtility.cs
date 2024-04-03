@@ -12,8 +12,27 @@ namespace GreedyVox.NetCode.Utilities
 {
     public static class NetCodeUtility
     {
-        private static Dictionary<ulong, ObjectIdentifier> s_SceneIDMap = new Dictionary<ulong, ObjectIdentifier>();
-        private static Dictionary<GameObject, Dictionary<ulong, ObjectIdentifier>> s_IDObjectIDMap = new Dictionary<GameObject, Dictionary<ulong, ObjectIdentifier>>();
+        private static Dictionary<ulong, ObjectIdentifier> s_SceneIDMap = new();
+        private static Dictionary<GameObject, Dictionary<ulong, ObjectIdentifier>> s_IDObjectIDMap = new();
+        /// <summary>
+        /// Unregisters the Object Identifier within the scene ID map.
+        /// </summary>
+        /// <param name="sceneObjectIdentifier">The Object Identifier that should be unregistered.</param>
+        public static void UnregisterSceneObjectIdentifier(ObjectIdentifier sceneObjectIdentifier)
+        => s_SceneIDMap.Remove(sceneObjectIdentifier.ID);
+        /// <summary>
+        /// Registers the Object Identifier within the scene ID map.
+        /// </summary>
+        /// <param name="sceneObjectIdentifier">The Object Identifier that should be registered.</param>
+        public static void RegisterSceneObjectIdentifier(ObjectIdentifier sceneObjectIdentifier)
+        {
+            if (s_SceneIDMap.ContainsKey(sceneObjectIdentifier.ID))
+            {
+                Debug.LogError($"Error: The scene object ID {sceneObjectIdentifier.ID} already exists. This can be corrected by running Scene Setup again on this scene.", sceneObjectIdentifier);
+                return;
+            }
+            s_SceneIDMap.Add(sceneObjectIdentifier.ID, sceneObjectIdentifier);
+        }
         /// <summary>
         /// Returns the Network ID for the specified GameObject.
         /// </summary>
@@ -23,8 +42,8 @@ namespace GreedyVox.NetCode.Utilities
         public static (ulong ID, bool HasID) GetID(GameObject gameObject, out int itemSlotID)
         {
             itemSlotID = -1;
-            if (gameObject == null) return (0, false);
-
+            if (gameObject == null)
+                return (0, false);
             var id = 0UL;
             var hasID = false;
             var net = gameObject.GetCachedComponent<NetworkObject>();
@@ -94,7 +113,7 @@ namespace GreedyVox.NetCode.Utilities
         /// <returns>The GameObject with the specified ID. Can be null.</returns>
         public static GameObject RetrieveGameObject(GameObject parent, ulong id, int itemSlotID)
         {
-            if (id == 0) { return null; }
+            if (id == 0) return null;
             // The ID can be a PhotonView, ObjectIdentifier, or Item ID. Search for the ObjectIdentifier first and then the PhotonView.
             GameObject gameObject = null;
             if (itemSlotID == -1)
@@ -135,10 +154,22 @@ namespace GreedyVox.NetCode.Utilities
                                 }
                             }
                         }
-                        idObjectIDMap.Add(id, objectIdentifier);
+                        if (idObjectIDMap.ContainsKey(id))
+                            idObjectIDMap[id] = objectIdentifier;
+                        else
+                            idObjectIDMap.Add(id, objectIdentifier);
                     }
                 }
-                if (objectIdentifier != null) { gameObject = objectIdentifier.gameObject; }
+                if (objectIdentifier == null)
+                {
+                    // The object isn't identified with an ObjectIdentifier. Search the PhotonViews.
+                    if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out NetworkObject net))
+                        gameObject = net?.gameObject;
+                }
+                else
+                {
+                    gameObject = objectIdentifier.gameObject;
+                }
             }
             else
             { // The ID is an item.
@@ -162,10 +193,8 @@ namespace GreedyVox.NetCode.Utilities
                 var item = inventory.GetCharacterItem(itemIdentifier, itemSlotID);
                 // The item may not exist if it was removed shortly after it was hit on sending client.
                 if (item == null)
-                {
                     return null;
-                }
-                return item.ActivePerspectiveItem.GetVisibleObject();
+                return item.gameObject;
             }
             return gameObject;
         }

@@ -24,12 +24,11 @@ namespace GreedyVox.NetCode.Game
         /// </summary>
         private void Start()
         {
-            for (int n = 0; n < m_SpawnablePrefabs.Count; n++) { SetupSpawnManager(m_SpawnablePrefabs[n], false); }
+            for (int n = 0; n < m_SpawnablePrefabs.Count; n++)
+                SetupSpawnManager(m_SpawnablePrefabs[n], false);
             var pool = FindObjectOfType<ObjectPool>()?.PreloadedPrefabs;
             for (int n = 0; n < pool?.Length; n++)
-            {
                 SetupSpawnManager(pool[n].Prefab);
-            }
         }
         private void SetupSpawnManager(GameObject go, bool pool = true)
         {
@@ -55,17 +54,11 @@ namespace GreedyVox.NetCode.Game
             else
             {
                 if (!m_SpawnedGameObjects.Contains(instanceObject))
-                {
                     m_SpawnedGameObjects.Add(instanceObject);
-                }
                 if (!m_ActiveGameObjects.Contains(instanceObject))
-                {
                     m_ActiveGameObjects.Add(instanceObject);
-                }
                 if (NetworkManager.Singleton.IsServer)
-                {
                     instanceObject.GetCachedComponent<NetworkObject>()?.Spawn();
-                }
             }
         }
         /// <summary>
@@ -74,11 +67,10 @@ namespace GreedyVox.NetCode.Game
         /// <param name="obj">The object to destroy.</param>
         protected override void DestroyInternal(GameObject obj)
         {
-            if (ObjectPool.InstantiatedWithPool(obj)) { DestroyInternalExtended(obj); }
+            if (ObjectPool.InstantiatedWithPool(obj))
+                DestroyInternalExtended(obj);
             else
-            {
                 GameObject.Destroy(obj);
-            }
         }
         /// <summary>
         /// Destroys the object.
@@ -89,13 +81,9 @@ namespace GreedyVox.NetCode.Game
             if ((m_NetworkObject = obj.GetComponent<NetworkObject>()) != null && m_NetworkObject.IsSpawned)
             {
                 if (NetworkManager.Singleton.IsServer)
-                {
                     m_NetworkObject.Despawn();
-                }
                 else if (NetworkManager.Singleton.IsClient)
-                {
                     NetCodeMessenger.Instance.ClientDespawnObject(m_NetworkObject.NetworkObjectId);
-                }
             }
             else
             {
@@ -130,8 +118,6 @@ namespace GreedyVox.NetCode.Game
         /// <param name="obj">The object instance to determine if was spawned with the object pool.</param>
         /// <returns>True if the object was spawned with the network object pool.</returns>
         protected override bool SpawnedWithPoolInternal(GameObject obj)
-        {
-            return m_SpawnedGameObjects.Contains(obj);
-        }
+        => m_SpawnedGameObjects.Contains(obj);
     }
 }

@@ -71,8 +71,8 @@ namespace GreedyVox.NetCode.Character
         public override void OnNetworkDespawn()
         {
             if (IsOwner)
-                EventHandler.UnregisterEvent<ulong>("OnPlayerConnected", OnPlayerConnected);
-            EventHandler.UnregisterEvent<ulong>("OnPlayerDisconnected", OnPlayerDisconnected);
+                EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
+            EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", OnPlayerDisconnected);
         }
         /// <summary>
         /// Gets called when message handlers are ready to be registered and the networking is setup.
@@ -80,8 +80,8 @@ namespace GreedyVox.NetCode.Character
         public override void OnNetworkSpawn()
         {
             if (IsOwner)
-                EventHandler.RegisterEvent<ulong>("OnPlayerConnected", OnPlayerConnected);
-            EventHandler.RegisterEvent<ulong>("OnPlayerDisconnected", OnPlayerDisconnected);
+                EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
+            EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", OnPlayerDisconnected);
         }
         /// <summary>
         /// Pickup isn't called on unequipped items. Ensure pickup is called before the item is equipped.
@@ -126,10 +126,11 @@ namespace GreedyVox.NetCode.Character
         /// <summary>
         /// A player has disconnected. Perform any cleanup.
         /// </summary>
-        /// <param name="player">The Player networking ID that disconnected.</param>
-        private void OnPlayerDisconnected(ulong ID)
+        /// <param name="id">The Client networking ID that disconnected.</param>
+        /// /// <param name="net">The Player networking Object that connected.</param>
+        private void OnPlayerDisconnected(ulong id, NetworkObjectReference net)
         {
-            if (OwnerClientId == ID && m_CharacterLocomotion.LookSource != null &&
+            if (OwnerClientId == net.NetworkObjectId && m_CharacterLocomotion.LookSource != null &&
                 m_CharacterLocomotion.LookSource.GameObject != null)
             {
                 // The local character has disconnected. The character no longer has a look source.
@@ -142,8 +143,9 @@ namespace GreedyVox.NetCode.Character
         /// <summary>
         /// A player has joined. Ensure the joining player is in sync with the current game state.
         /// </summary>
-        /// <param name="id">The Player networking ID that connected.</param>
-        private void OnPlayerConnected(ulong ID)
+        /// <param name="id">The Client networking ID that connected.</param>
+        /// <param name="net">The Player networking Object that connected.</param>
+        private void OnPlayerConnected(ulong id, NetworkObjectReference net)
         {
             // Notify the joining player of the ItemIdentifiers that the player has within their inventory.
             if (m_Inventory != null)

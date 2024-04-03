@@ -16,7 +16,8 @@ namespace GreedyVox.NetCode.Data
         public float ScheduledDeactivation;
         public float ImpactStateDisableTimer;
         public NetworkObjectReference NetCodeObject;
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer)
+        where T : IReaderWriter
         {
             serializer.SerializeValue(ref OwnerID);
             serializer.SerializeValue(ref ImpactStateName);

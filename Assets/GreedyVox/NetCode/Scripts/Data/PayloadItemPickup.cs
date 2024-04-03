@@ -11,7 +11,8 @@ namespace GreedyVox.NetCode.Data
         public Vector3 Velocity;
         public uint[] ItemID;
         public int[] ItemAmounts;
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer)
+        where T : IReaderWriter
         {
             serializer.SerializeValue(ref ItemCount);
             if (serializer.IsReader)

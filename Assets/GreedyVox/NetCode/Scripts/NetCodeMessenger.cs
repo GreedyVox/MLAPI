@@ -15,12 +15,10 @@ namespace GreedyVox.NetCode
         /// </summary>
         private void Awake()
         {
-            if (_Instance != null && _Instance != this) { Destroy(this.gameObject); } else { _Instance = this; }
+            if (_Instance != null && _Instance != this) Destroy(this.gameObject); else _Instance = this;
         }
         public override void OnNetworkDespawn()
-        {
-            m_CustomMessagingManager?.UnregisterNamedMessageHandler(MsgServerName);
-        }
+        => m_CustomMessagingManager?.UnregisterNamedMessageHandler(MsgServerName);
         public override void OnNetworkSpawn()
         {
             m_CustomMessagingManager = NetworkManager.Singleton.CustomMessagingManager;
@@ -30,11 +28,9 @@ namespace GreedyVox.NetCode
                 m_CustomMessagingManager?.RegisterNamedMessageHandler(MsgServerName, (sender, reader) =>
                 {
                     ByteUnpacker.ReadValuePacked(reader, out ulong id);
-                    if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out var net) &&
-                        NetworkObjectPool.IsNetworkActive())
-                    {
+                    if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out var net)
+                     && NetworkObjectPool.IsNetworkActive())
                         NetworkObjectPool.Destroy(net.gameObject);
-                    }
                 });
             }
         }

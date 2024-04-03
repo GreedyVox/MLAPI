@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// Synchronizes the Respawner over the network.
 /// </summary>
-namespace GreedyVox.NetCode
+namespace GreedyVox.NetCode.Traits
 {
     public class NetCodeRespawnerMonitor : NetworkBehaviour, INetworkRespawnerMonitor
     {
@@ -21,7 +21,8 @@ namespace GreedyVox.NetCode
             if (NetworkManager.Singleton.IsServer)
             {
                 var net = gameObject.GetComponent<NetworkObject>();
-                if (net != null && !net.IsSpawned) { net.Spawn(); }
+                if (net != null && !net.IsSpawned)
+                    net.Spawn();
             }
         }
     }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Opsive.Shared.Game;
+﻿using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Character;
 using Opsive.UltimateCharacterController.Character.Abilities;
 using Opsive.UltimateCharacterController.Networking.Traits;
@@ -10,22 +9,18 @@ using UnityEngine;
 /// <summary>
 /// Synchronizes the Interactable component over the network.
 /// </summary>
-namespace GreedyVox.NetCode
+namespace GreedyVox.NetCode.Traits
 {
     public class NetCodeInteractableMonitor : NetworkBehaviour, INetworkInteractableMonitor
     {
         private GameObject m_GameObject;
         private Interactable m_Interactable;
-        private NetCodeSettingsAbstract m_Settings;
-        private Dictionary<ulong, NetworkObject> m_NetworkObjects;
         /// <summary>
         /// Initializes the default values.
         /// </summary>
         private void Awake()
         {
             m_GameObject = gameObject;
-            m_NetworkObjects = NetworkManager.Singleton.SpawnManager.SpawnedObjects;
-            m_Settings = NetCodeManager.Instance.NetworkSettings;
             m_Interactable = m_GameObject.GetCachedComponent<Interactable>();
         }
         /// <summary>
@@ -38,8 +33,7 @@ namespace GreedyVox.NetCode
             var net = character.GetCachedComponent<NetworkObject>();
             if (net == null)
                 Debug.LogError("Error: The character " + character.name + " must have a NetworkObject component.");
-            else
-                if (IsServer)
+            else if (IsServer)
                 InteractClientRpc(net, interactAbility.Index);
             else
                 InteractServerRpc(net, interactAbility.Index);
@@ -54,7 +48,7 @@ namespace GreedyVox.NetCode
             if (character.TryGet(out var net))
             {
                 var go = net.gameObject;
-                var characterLocomotion = net.gameObject.GetCachedComponent<UltimateCharacterLocomotion>();
+                var characterLocomotion = go.GetCachedComponent<UltimateCharacterLocomotion>();
                 if (characterLocomotion != null)
                 {
                     var interact = characterLocomotion.GetAbility<Interact>(abilityIndex);
@@ -65,13 +59,13 @@ namespace GreedyVox.NetCode
         [ServerRpc]
         private void InteractServerRpc(NetworkObjectReference character, int abilityIndex)
         {
-            if (!IsClient) { InteractRpc(character, abilityIndex); }
+            if (!IsClient) InteractRpc(character, abilityIndex);
             InteractClientRpc(character, abilityIndex);
         }
         [ClientRpc]
         private void InteractClientRpc(NetworkObjectReference character, int abilityIndex)
         {
-            if (!IsOwner) { InteractRpc(character, abilityIndex); }
+            if (!IsOwner) InteractRpc(character, abilityIndex);
         }
     }
 }

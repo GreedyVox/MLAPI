@@ -23,10 +23,11 @@ namespace GreedyVox.NetCode
         /// <summary>
         /// Schedule the object for removal.
         /// </summary>
-        private void OnEnable()
-        {
-            m_RemoveEvent = Scheduler.Schedule(m_Lifetime, Remove);
-        }
+        private void OnEnable() => m_RemoveEvent = Scheduler.Schedule(m_Lifetime, Remove);
+        /// <summary>
+        /// The object has been destroyed - no need for removal if it hasn't already been removed.
+        /// </summary>
+        private void OnDisable() => CancelRemoveEvent();
         /// <summary>
         /// Cancels the remove event.
         /// </summary>
@@ -39,25 +40,14 @@ namespace GreedyVox.NetCode
             }
         }
         /// <summary>
-        /// The object has been destroyed - no need for removal if it hasn't already been removed.
-        /// </summary>
-        private void OnDisable()
-        {
-            CancelRemoveEvent();
-        }
-        /// <summary>
         /// Remove the object.
         /// </summary>
         private void Remove()
         {
             if (m_NetCodeObject == null)
-            {
                 ObjectPool.Destroy(m_GameObject);
-            }
             else if (IsServer)
-            {
                 NetCodeObjectPool.Destroy(m_GameObject);
-            }
             m_RemoveEvent = null;
         }
     }

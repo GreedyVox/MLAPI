@@ -6,22 +6,18 @@ using UnityEngine;
 /// <summary>
 /// The NetCodeAttributeMonitor will ensure the attribute values are synchronized when a new player joins the room.
 /// </summary>
-namespace GreedyVox.NetCode
+namespace GreedyVox.NetCode.Traits
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(AttributeManager))]
     public class NetCodeAttributeMonitor : NetworkBehaviour
     {
         private AttributeManager m_AttributeManager;
-        private NetCodeSettingsAbstract m_Settings;
         /// <summary>
         /// Initialize the default values.
         /// </summary>
-        private void Awake()
-        {
-            m_Settings = NetCodeManager.Instance.NetworkSettings;
-            m_AttributeManager = gameObject.GetCachedComponent<AttributeManager>();
-        }
+        private void Awake() =>
+        m_AttributeManager = gameObject.GetCachedComponent<AttributeManager>();
         /// <summary>
         /// A player has entered the room. Ensure the joining player is in sync with the current game state.
         /// </summary>
@@ -29,21 +25,13 @@ namespace GreedyVox.NetCode
         {
             var attributes = m_AttributeManager.Attributes;
             if (attributes != null)
-            {
                 for (int i = 0; i < attributes.Length; ++i)
-                {
                     if (IsServer)
-                    {
                         UpdateAttributeClientRpc(attributes[i].Name, attributes[i].Value, attributes[i].MinValue, attributes[i].MaxValue,
                             attributes[i].AutoUpdateAmount, attributes[i].AutoUpdateInterval, attributes[i].AutoUpdateStartDelay, (int)attributes[i].AutoUpdateValueType);
-                    }
                     else if (IsOwner)
-                    {
                         UpdateAttributeServerRpc(attributes[i].Name, attributes[i].Value, attributes[i].MinValue, attributes[i].MaxValue,
                             attributes[i].AutoUpdateAmount, attributes[i].AutoUpdateInterval, attributes[i].AutoUpdateStartDelay, (int)attributes[i].AutoUpdateValueType);
-                    }
-                }
-            }
         }
         /// <summary>
         /// Updates the attribute values for the specified attribute.
@@ -70,18 +58,18 @@ namespace GreedyVox.NetCode
                 attribute.AutoUpdateValueType = (Attribute.AutoUpdateValue)autoUpdateValueType;
             }
         }
-
         [ServerRpc]
         private void UpdateAttributeServerRpc(string name, float value, float minValue, float maxValue, float autoUpdateAmount, float autoUpdateInterval, float autoUpdateStartDelay, int autoUpdateValueType)
         {
-            if (!IsClient) { UpdateAttributeRpc(name, value, minValue, maxValue, autoUpdateAmount, autoUpdateInterval, autoUpdateStartDelay, autoUpdateValueType); }
+            if (!IsClient)
+                UpdateAttributeRpc(name, value, minValue, maxValue, autoUpdateAmount, autoUpdateInterval, autoUpdateStartDelay, autoUpdateValueType);
             UpdateAttributeClientRpc(name, value, minValue, maxValue, autoUpdateAmount, autoUpdateInterval, autoUpdateStartDelay, autoUpdateValueType);
         }
-
         [ClientRpc]
         private void UpdateAttributeClientRpc(string name, float value, float minValue, float maxValue, float autoUpdateAmount, float autoUpdateInterval, float autoUpdateStartDelay, int autoUpdateValueType)
         {
-            if (!IsOwner) { UpdateAttributeRpc(name, value, minValue, maxValue, autoUpdateAmount, autoUpdateInterval, autoUpdateStartDelay, autoUpdateValueType); }
+            if (!IsOwner)
+                UpdateAttributeRpc(name, value, minValue, maxValue, autoUpdateAmount, autoUpdateInterval, autoUpdateStartDelay, autoUpdateValueType);
         }
     }
 }

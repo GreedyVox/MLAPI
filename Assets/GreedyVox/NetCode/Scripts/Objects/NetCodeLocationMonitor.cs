@@ -9,12 +9,23 @@ using UnityEngine;
 /// <summary>
 /// Synchronizes the object's GameObject, Transform or Rigidbody values over the network.
 /// </summary>
-namespace GreedyVox.NetCode
+namespace GreedyVox.NetCode.Objects
 {
     [DisallowMultipleComponent]
     // [RequireComponent (typeof (NetCodeSyncRate))]
     public class NetCodeLocationMonitor : NetworkBehaviour
     {
+        /// <summary>
+        /// Specifies which transform objects are dirty.
+        /// </summary>
+        private enum TransformDirtyFlags : byte
+        {
+            Position = 1, // The position has changed.
+            RigidbodyVelocity = 2, // The Rigidbody velocity has changed.
+            Rotation = 4, // The rotation has changed.
+            RigidbodyAngularVelocity = 8, // The Rigidbody angular velocity has changed.
+            Scale = 16 // The scale has changed.
+        }
         [Tooltip("Should the GameObject's active state be syncornized?")]
         [SerializeField] protected bool m_SynchronizeActiveState = true;
         [Tooltip("Should the transform's position be synchronized?")]
@@ -37,17 +48,7 @@ namespace GreedyVox.NetCode
         private CustomMessagingManager m_CustomMessagingManager;
         private float m_NetCodeTime, m_Angle, m_Distance = 0.0f;
         private Vector3 m_NetworkRigidbodyAngularVelocity, m_NetworkRigidbodyVelocity, m_NetworkPosition, m_NetworkScale;
-        /// <summary>
-        /// Specifies which transform objects are dirty.
-        /// </summary>
-        private enum TransformDirtyFlags : byte
-        {
-            Position = 1, // The position has changed.
-            RigidbodyVelocity = 2, // The Rigidbody velocity has changed.
-            Rotation = 4, // The rotation has changed.
-            RigidbodyAngularVelocity = 8, // The Rigidbody angular velocity has changed.
-            Scale = 16 // The scale has changed.
-        }
+
         /// <summary>
         /// Initialize the default values.
         /// </summary>
@@ -70,9 +71,7 @@ namespace GreedyVox.NetCode
             m_InitialSync = true;
             // If the object is pooled then the network object pool will manage the active state.
             if (m_SynchronizeActiveState && NetCodeObjectPool.SpawnedWithPool(m_GameObject))
-            {
                 m_SynchronizeActiveState = false;
-            }
         }
         /// <summary>
         /// The object has been despawned.
@@ -85,23 +84,19 @@ namespace GreedyVox.NetCode
             m_CustomMessagingManager?.UnregisterNamedMessageHandler(m_MsgName);
         }
         /// <summary>
-        /// A player has entered the world. Ensure the joining player is in sync with the current game state.
+        /// The object has been spawned.
         /// </summary>
-        /// <param name="player">The Player that entered the world.</param>
-        /// <param name="character">The character that the player controls.</param>
         public override void OnNetworkSpawn()
         {
             m_NetworkSync.NetworkSyncEvent += OnNetworkSyncEvent;
             m_MsgName = $"{NetworkObjectId}MsgClientLocationMonitor{OwnerClientId}";
             m_CustomMessagingManager = NetworkManager.Singleton.CustomMessagingManager;
-
             if (!IsServer)
             {
-                if (m_Rigidbody == null) { m_Settings.NetworkSyncUpdateEvent += OnNetworkSyncUpdateEvent; }
+                if (m_Rigidbody == null)
+                    m_Settings.NetworkSyncUpdateEvent += OnNetworkSyncUpdateEvent;
                 else
-                {
                     m_Settings.NetworkSyncFixedUpdateEvent += OnNetworkSyncFixedUpdateEvent;
-                }
                 m_CustomMessagingManager?.RegisterNamedMessageHandler(m_MsgName, (sender, reader) =>
                 {
                     Serialize(ref reader);
@@ -109,11 +104,10 @@ namespace GreedyVox.NetCode
             }
             if (m_SynchronizeActiveState && !NetworkObjectPool.SpawnedWithPool(m_GameObject))
             {
-                if (IsServer) { SetActiveClientRpc(m_GameObject.activeSelf); }
+                if (IsServer)
+                    SetActiveClientRpc(m_GameObject.activeSelf);
                 else if (IsOwner)
-                {
                     SetActiveServerRpc(m_GameObject.activeSelf);
-                }
             }
         }
         /// <summary>
@@ -124,48 +118,30 @@ namespace GreedyVox.NetCode
             using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
             {
                 if (Serialize())
-                {
                     m_CustomMessagingManager?.SendNamedMessage(m_MsgName, clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
-                }
             }
         }
-
         /// <summary>
         /// Activates or deactivates the GameObject on the network.
         /// </summary>
         /// <param name="active">Should the GameObject be activated?</param>
         [ServerRpc]
-        private void SetActiveServerRpc(bool active)
-        {
-            SetActiveClientRpc(active);
-        }
+        private void SetActiveServerRpc(bool active) => SetActiveClientRpc(active);
 
         [ClientRpc]
-        private void SetActiveClientRpc(bool active)
-        {
-            m_GameObject?.SetActive(active);
-        }
+        private void SetActiveClientRpc(bool active) => m_GameObject?.SetActive(active);
         /// <summary>
         /// Updates the remote object's transform values.
         /// </summary>
-        private void OnNetworkSyncUpdateEvent()
-        {
-            Synchronize();
-        }
+        private void OnNetworkSyncUpdateEvent() => Synchronize();
         /// <summary>
         /// Fixed updates the remote object's transform values.
         /// </summary>
-        private void OnNetworkSyncFixedUpdateEvent()
-        {
-            Synchronize();
-        }
+        private void OnNetworkSyncFixedUpdateEvent() => Synchronize();
         /// <summary>
         /// Returns the maximus size for the fast buffer writer
         /// </summary>               
-        private int MaxBufferSize()
-        {
-            return sizeof(byte) + sizeof(float) * 3 * 6;
-        }
+        private int MaxBufferSize() => sizeof(byte) + sizeof(float) * 3 * 6;
         /// <summary>
         /// Synchronizes the transform.
         /// </summary>
@@ -181,13 +157,9 @@ namespace GreedyVox.NetCode
             else
             {
                 if (m_SynchronizePosition)
-                {
                     m_Transform.position = Vector3.MoveTowards(transform.position, m_NetworkPosition, m_Distance * (1.0f / m_Settings.SyncRateClient));
-                }
                 if (m_SynchronizeRotation)
-                {
                     m_Transform.rotation = Quaternion.RotateTowards(transform.rotation, m_NetworkRotation, m_Angle * (1.0f / m_Settings.SyncRateClient));
-                }
             }
         }
         /// <summary>

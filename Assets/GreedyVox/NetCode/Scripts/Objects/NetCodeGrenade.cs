@@ -10,13 +10,28 @@ using UnityEngine;
 /// <summary>
 /// Initializes the grenade over the network.
 /// </summary>
-namespace GreedyVox.NetCode
+namespace GreedyVox.NetCode.Objects
 {
     [DisallowMultipleComponent]
-    public class NetCodeGrenado : Grenade, IPayload
+    public class NetCodeGrenade : Grenade, IPayload
     {
         private PayloadGrenado m_Data;
         private ImpactDamageData m_DamageData;
+        /// <summary>
+        /// Returns the maximus size for the fast buffer writer
+        /// </summary>
+        public int MaxBufferSize()
+        {
+            return FastBufferWriter.GetWriteSize(m_Data.ImpactStateName) +
+                FastBufferWriter.GetWriteSize(m_Data.Velocity) +
+                FastBufferWriter.GetWriteSize(m_Data.Torque) +
+                FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
+                FastBufferWriter.GetWriteSize(m_Data.ImpactLayers) +
+                FastBufferWriter.GetWriteSize(m_Data.ImpactForce) +
+                FastBufferWriter.GetWriteSize(m_Data.DamageAmount) +
+                FastBufferWriter.GetWriteSize(m_Data.ImpactStateDisableTimer) +
+                FastBufferWriter.GetWriteSize(m_Data.ScheduledDeactivation);
+        }
         /// <summary>
         /// Initialize the default data values.
         /// </summary>
@@ -38,21 +53,6 @@ namespace GreedyVox.NetCode
                 (m_ScheduledDeactivation.EndTime - Time.time) : -1,
                 NetCodeObject = m_Owner.GetCachedComponent<NetworkObject>()
             };
-        }
-        /// <summary>
-        /// Returns the maximus size for the fast buffer writer
-        /// </summary>
-        public int MaxBufferSize()
-        {
-            return FastBufferWriter.GetWriteSize(m_Data.ImpactStateName) +
-                FastBufferWriter.GetWriteSize(m_Data.Velocity) +
-                FastBufferWriter.GetWriteSize(m_Data.Torque) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactLayers) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactForce) +
-                FastBufferWriter.GetWriteSize(m_Data.DamageAmount) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactStateDisableTimer) +
-                FastBufferWriter.GetWriteSize(m_Data.ScheduledDeactivation);
         }
         /// <summary>
         /// The object has been spawned, write the payload data.
