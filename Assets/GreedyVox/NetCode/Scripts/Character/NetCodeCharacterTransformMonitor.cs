@@ -15,17 +15,6 @@ namespace GreedyVox.NetCode.Character
     [DisallowMultipleComponent]
     public class NetCodeCharacterTransformMonitor : NetworkBehaviour
     {
-        /// <summary>
-        /// Specifies which transform objects are dirty.
-        /// </summary>
-        private enum TransformDirtyFlags : byte
-        {
-            Position = 1, // The position has changed.
-            Rotation = 2, // The rotation has changed.
-            Platform = 4, // The platform has changed.
-            Scale = 8 // The scale has changed.
-        }
-
         [Tooltip("Should the transform's scale be synchronized?")]
         [SerializeField] protected bool m_SynchronizeScale;
         [Tooltip("A multiplier to apply to the interpolation destination for remote players.")]
@@ -34,7 +23,6 @@ namespace GreedyVox.NetCode.Character
         private int m_MaxBufferSize;
         private bool m_InitialSync = true;
         private Transform m_Transform;
-        private IReadOnlyList<ulong> m_Clients;
         private ulong m_PlatformID, m_ServerID;
         private NetCodeManager m_NetworkManager;
         private FastBufferWriter m_FastBufferWriter;
@@ -45,6 +33,16 @@ namespace GreedyVox.NetCode.Character
         private UltimateCharacterLocomotion m_CharacterLocomotion;
         private Quaternion m_NetworkPlatformPrevRotationOffset, m_NetworkPlatformRotationOffset, m_NetworkRotation;
         private Vector3 m_NetworkPlatformRelativePosition, m_NetworkPlatformPrevRelativePosition, m_NetworkPosition, m_NetworkScale;
+        /// <summary>
+        /// Specifies which transform objects are dirty.
+        /// </summary>
+        private enum TransformDirtyFlags : byte
+        {
+            Position = 1, // The position has changed.
+            Rotation = 2, // The rotation has changed.
+            Platform = 4, // The platform has changed.
+            Scale = 8 // The scale has changed.
+        }
         /// <summary>
         /// Initialize the default values.
         /// </summary>
@@ -88,19 +86,14 @@ namespace GreedyVox.NetCode.Character
         public override void OnNetworkSpawn()
         {
             m_ServerID = NetworkManager.ServerClientId;
-            m_MsgNameClient = $"{NetworkObjectId}MsgClientTransform{OwnerClientId}";
-            m_MsgNameServer = $"{NetworkObjectId}MsgServerTransform{OwnerClientId}";
-            m_CustomMessagingManager = NetworkManager.Singleton.CustomMessagingManager;
+            m_CustomMessagingManager = NetworkManager.CustomMessagingManager;
+            m_MsgNameClient = $"{OwnerClientId}MsgClientTransform{NetworkObjectId}";
+            m_MsgNameServer = $"{OwnerClientId}MsgServerTransform{NetworkObjectId}";
 
             if (IsServer)
-            {
-                m_Clients = NetworkManager.Singleton.ConnectedClientsIds;
                 m_NetworkManager.NetworkSettings.NetworkSyncServerEvent += OnNetworkSyncServerEvent;
-            }
             else if (IsOwner)
-            {
                 m_NetworkManager.NetworkSettings.NetworkSyncClientEvent += OnNetworkSyncClientEvent;
-            }
 
             if (!IsOwner)
             {
@@ -131,10 +124,14 @@ namespace GreedyVox.NetCode.Character
         private void OnNetworkSyncClientEvent()
         {
             // Error handling if this function still executing after despawning event
-            if (NetworkManager.Singleton.IsClient)
+            if (IsClient)
+            {
                 using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
+                {
                     if (Serialize())
                         m_CustomMessagingManager?.SendNamedMessage(m_MsgNameServer, m_ServerID, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+                }
+            }
         }
         /// <summary>
         /// Network broadcast event called from the NetworkInfo component
@@ -142,18 +139,20 @@ namespace GreedyVox.NetCode.Character
         private void OnNetworkSyncServerEvent()
         {
             // Error handling if this function still executing after despawning event
-            if (NetworkManager.Singleton.IsServer)
+            if (IsServer)
             {
                 using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
+                {
                     if (IsOwner)
                     {
                         if (Serialize())
-                            m_CustomMessagingManager?.SendNamedMessage(m_MsgNameClient, m_Clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+                            m_CustomMessagingManager?.SendNamedMessageToAll(m_MsgNameClient, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
                     }
                     else if (Serialize(ref m_Flag))
                     {
-                        m_CustomMessagingManager?.SendNamedMessage(m_MsgNameClient, m_Clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+                        m_CustomMessagingManager?.SendNamedMessageToAll(m_MsgNameClient, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
                     }
+                }
                 m_Flag = 0;
             }
         }
@@ -168,7 +167,7 @@ namespace GreedyVox.NetCode.Character
             if (m_CharacterLocomotion.MovingPlatform != null)
             {
 #if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER
-                if (m_CharacterFootEffects != null && (m_NetworkPlatformPrevRelativePosition - m_NetworkPlatformRelativePosition).sqrMagnitude > 0.01f) 
+                if (m_CharacterFootEffects != null && (m_NetworkPlatformPrevRelativePosition - m_NetworkPlatformRelativePosition).sqrMagnitude > 0.01f)
                     m_CharacterFootEffects.CanPlaceFootstep = true;
 #endif
                 m_NetworkPlatformPrevRelativePosition = Vector3.MoveTowards(m_NetworkPlatformPrevRelativePosition, m_NetworkPlatformRelativePosition, m_Distance * serializationRate);
@@ -180,7 +179,7 @@ namespace GreedyVox.NetCode.Character
             else
             {
 #if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER
-                if (m_CharacterFootEffects != null && (m_Transform.position - m_NetworkPosition).sqrMagnitude > 0.01f) 
+                if (m_CharacterFootEffects != null && (m_Transform.position - m_NetworkPosition).sqrMagnitude > 0.01f)
                     m_CharacterFootEffects.CanPlaceFootstep = true;
 #endif
                 m_Transform.position = Vector3.MoveTowards(m_Transform.position, m_NetworkPosition, m_Distance * serializationRate);
@@ -259,7 +258,7 @@ namespace GreedyVox.NetCode.Character
         public bool Serialize(ref byte flag)
         {
             // When the character is on a platform the position and rotation is relative to that platform.
-            if ((m_Flag & (byte)TransformDirtyFlags.Platform) != 0)
+            if ((flag & (byte)TransformDirtyFlags.Platform) != 0)
             {
                 // Write flag as dirty
                 BytePacker.WriteValuePacked(m_FastBufferWriter, flag);

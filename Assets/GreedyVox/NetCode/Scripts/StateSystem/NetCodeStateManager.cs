@@ -17,17 +17,13 @@ namespace GreedyVox.NetCode
     /// </summary>
     public class NetCodeStateManager : NetworkBehaviour
     {
-        private Dictionary<GameObject, HashSet<string>> m_ActiveCharacterStates;
-        private NetCodeManager m_NetworkManager;
-        private object[] m_EventData = new object[3];
+        private Dictionary<NetworkObjectReference, HashSet<string>> m_ActiveCharacterStates;
+        // private NetCodeManager m_NetworkManager;
         /// <summary>
         /// Initializes the default values.
         /// </summary>
-        private void Awake()
-        {
-            m_NetworkManager = NetCodeManager.Instance;
-            m_ActiveCharacterStates = new Dictionary<GameObject, HashSet<string>>();
-        }
+        private void Awake() =>
+        m_ActiveCharacterStates = new Dictionary<NetworkObjectReference, HashSet<string>>();
         /// <summary>
         /// Registering events.
         /// </summary>
@@ -73,70 +69,44 @@ namespace GreedyVox.NetCode
         {
             // If isn't the Server/Host then we should early return here!
             if (!IsServer) return;
-            var client = new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { id } } };
+            // var client = new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { id } } };
             // Ensure the new player has received all of the active events.
-            m_EventData[2] = true;
             foreach (var activeStates in m_ActiveCharacterStates)
-            {
-                m_EventData[0] = activeStates.Key;
                 foreach (var activestate in activeStates.Value)
-                {
-                    m_EventData[1] = activestate;
-                    StateEventClientRpc(SerializerObjectArray.Serialize(m_EventData), client);
-                }
-            }
+                    // StateEventClientRpc(activeStates.Key, activestate, true, client);
+                    StateEventRpc(activeStates.Key, activestate, true);
             // Keep track of the character states for as long as the character is within the room.
             if (obj.TryGet(out var net))
-                m_ActiveCharacterStates.Add(net.gameObject, new HashSet<string>());
+                m_ActiveCharacterStates.Add(net, new HashSet<string>());
         }
         /// <summary>
         /// A state has changed. 
         /// </summary>
         /// <param name="character">The character that had the state change.</param>
         /// <param name="stateName">The name of the state that was changed.</param>
-        /// <param name="active">Is the state active?</param>
+        /// <param name="active">Is the state active?</param>        
         private void OnStateChange(GameObject character, string state, bool active)
         {
             var net = character.GetCachedComponent<NetworkObject>();
-            if (m_ActiveCharacterStates.TryGetValue(net?.gameObject, out HashSet<string> activeStates))
+            if (net == null) return;
+            if (m_ActiveCharacterStates.TryGetValue(net, out HashSet<string> activeStates))
             {
                 // Store the active states in a HashSet. This will be stored for all characters.
-                if (active)
-                    activeStates.Add(state);
-                else
-                    activeStates.Remove(state);
-                if (net.IsOwner)
-                {
-                    // Notify remote players of the state change for the local character.
-                    m_EventData[0] = net.OwnerClientId;
-                    m_EventData[1] = state;
-                    m_EventData[2] = active;
-                    if (IsServer)
-                        StateEventClientRpc(SerializerObjectArray.Serialize(m_EventData));
-                    else
-                        StateEventServerRpc(SerializerObjectArray.Serialize(m_EventData));
-                }
+                if (active) activeStates.Add(state);
+                else activeStates.Remove(state);
+                // Notify remote players of the state change for the local character.
+                StateEventRpc(net, state, active);
             }
         }
         /// <summary>
         /// A event from state manager has been sent.
         /// </summary>
         /// <param name="SerializableObjectArray">The state event.</param>
-        private void StateEventRpc(SerializableObjectArray dat)
+        [Rpc(SendTo.NotOwner)]
+        private void StateEventRpc(NetworkObjectReference obj, string state, bool active)
         {
-            var data = DeserializerObjectArray.Deserialize(dat);
-            if (NetworkManager.Singleton.ConnectedClients.TryGetValue((ulong)data[0], out var client)
-             && !client.PlayerObject.IsOwner)
-                StateManager.SetState(client.PlayerObject.gameObject, (string)data[1], (bool)data[2]);
+            if (obj.TryGet(out var net))
+                StateManager.SetState(net.gameObject, state, active);
         }
-        [ServerRpc(RequireOwnership = false)]
-        private void StateEventServerRpc(SerializableObjectArray dat)
-        {
-            if (!IsClient) { StateEventRpc(dat); }
-            StateEventClientRpc(dat);
-        }
-        [ClientRpc]
-        private void StateEventClientRpc(SerializableObjectArray dat, ClientRpcParams clientRpcParams = default)
-        => StateEventRpc(dat);
     }
 }

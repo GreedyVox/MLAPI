@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "GreedyVox/Networking/Network Settings Test")]
@@ -16,14 +17,12 @@ public class NetCodeSettingsTest : NetCodeSettingsAbstract
     {
         base.OnEnable();
         // Channel = string.IsNullOrEmpty (m_NetworkChannel) ? "MLAPI_DEFAULT_MESSAGE" : m_NetworkChannel;
-        // Broadcast = string.IsNullOrEmpty (m_NetworkBroadcast) ? "MLAPI_DEFAULT_MESSAGE" : m_NetworkBroadcast;
-
-#if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER 
-        Debug.Log ("<color=white><b>ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER ENABLED</b></color>");
+        // Broadcast = string.IsNullOrEmpty (m_NetworkBroadcast) ? "MLAPI_DEFAULT_MESSAGE" : m_NetworkBroadcast;       
+#if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER
+        Debug.Log("<color=white><b>ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER ENABLED</b></color>");
 #else
         Debug.Log("<color=red><b>ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER DISENABLED</b></color>");
 #endif
-
     }
     public override void PlayConnect(AudioSource source)
     {

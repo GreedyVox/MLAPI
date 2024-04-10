@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UNET;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -9,7 +9,7 @@ public class NetCodeMenuGUI : NetworkBehaviour
     [SerializeField][Range(1, 1000)] private int m_WindowWidth = 200;
     [SerializeField] GUIStyle m_StyleVersion = null;
     private int m_ElementWidth = 0;
-    private UNetTransport m_Transport;
+    private UnityTransport m_Transport;
     private Texture2D m_Texture = null;
     private bool m_ToggleAddress = false;
     private NetworkManager m_NetworkManager;
@@ -22,7 +22,7 @@ public class NetCodeMenuGUI : NetworkBehaviour
         m_ElementWidth = m_WindowWidth - 25;
         m_WindowConnect = new Rect(2, 2, 200, 25);
         m_WindowDisconnect = new Rect(2, 2, 200, 100);
-        m_Transport = NetworkManager.Singleton.GetComponent<UNetTransport>();
+        m_Transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
         m_NetworkManager = GetComponent<NetworkManager>();
         if (m_NetworkManager != null)
         {
@@ -32,7 +32,7 @@ public class NetCodeMenuGUI : NetworkBehaviour
     }
     private void OnGUI()
     {
-        if (IsServer || IsClient)
+        if (NetworkManager.Singleton.IsConnectedClient)
         {
             if (Event.current.isKey && Event.current.keyCode == KeyCode.F1)
                 Disconnect();
@@ -82,18 +82,18 @@ public class NetCodeMenuGUI : NetworkBehaviour
         if (GUILayout.Button("Host", GUILayout.Width(m_ElementWidth)))
         {
             StartClient(true);
-            Debug.Log($"<color=white>Starting Hosting On <b>{m_Transport?.ConnectAddress}</b></color>");
+            Debug.Log($"<color=white>Starting Hosting On <b>{m_Transport?.ConnectionData.Address}</b></color>");
         }
         else if (GUILayout.Button("Client", GUILayout.Width(m_ElementWidth)))
         {
             StartClient(false);
             NetworkLog.LogInfoServer($"<color=white>Client <b>{OwnerClientId}</b> Joined</color>");
-            Debug.Log($"<color=white>Joining Server On <b>{m_Transport?.ConnectAddress}</b></color>");
+            Debug.Log($"<color=white>Joining Server On <b>{m_Transport?.ConnectionData.Address}</b></color>");
         }
         else if (GUILayout.Button("Server", GUILayout.Width(m_ElementWidth)))
         {
             StartServer();
-            Debug.Log($"<color=white>Starting Server On <b>{m_Transport?.ConnectAddress}</b></color>");
+            Debug.Log($"<color=white>Starting Server On <b>{m_Transport?.ConnectionData.Address}</b></color>");
         }
         else if (GUILayout.Button("Exit", GUILayout.Width(m_ElementWidth)))
         {
@@ -116,7 +116,7 @@ public class NetCodeMenuGUI : NetworkBehaviour
                 m_Style.normal.textColor = Color.red;
             }
             if (m_Address.Length > 0)
-                GUILayout.Label(string.Format("{0}:{1}", m_Address, m_Transport?.ConnectPort),
+                GUILayout.Label(string.Format("{0}:{1}", m_Address, m_Transport?.ConnectionData.Port),
                     m_Style, GUILayout.Width(m_ElementWidth));
         }
     }
@@ -124,8 +124,8 @@ public class NetCodeMenuGUI : NetworkBehaviour
     #region Methods
     private void UpdateAddress(string ip)
     {
-        if (!m_Transport.ConnectAddress.Equals(ip))
-            m_Transport.ConnectAddress = ip;
+        if (!m_Transport.ConnectionData.Address.Equals(ip))
+            m_Transport.ConnectionData.Address = ip;
     }
     private void StartServer()
     {
@@ -143,11 +143,14 @@ public class NetCodeMenuGUI : NetworkBehaviour
         }
         else { NetworkManager.Singleton.StartClient(); }
     }
-    public void Disconnect() => NetworkManager.Singleton.Shutdown();
+    public void Disconnect()
+    {
+        NetworkManager.Singleton.Shutdown();
+        NetworkManager.Singleton.ConnectionApprovalCallback -= ApprovalCheck;
+    }
     private void Quit()
     {
         NetworkManager.Singleton.ConnectionApprovalCallback -= ApprovalCheck;
-
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else

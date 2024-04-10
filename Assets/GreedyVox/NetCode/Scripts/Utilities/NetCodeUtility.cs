@@ -128,9 +128,8 @@ namespace GreedyVox.NetCode.Utilities
                     idObjectIDMap = new Dictionary<ulong, ObjectIdentifier>();
                     s_IDObjectIDMap.Add(parent, idObjectIDMap);
                 }
-
-                ObjectIdentifier objectIdentifier = null;
-                if (!idObjectIDMap.TryGetValue(id, out objectIdentifier))
+                if (!idObjectIDMap.TryGetValue(id, out var objectIdentifier)
+                || (objectIdentifier == null && idObjectIDMap.ContainsKey(id)))
                 {
                     // The ID doesn't exist in the cache. Try to find the object.
                     NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out var hitPhotonView);
@@ -141,11 +140,12 @@ namespace GreedyVox.NetCode.Utilities
                     else
                     {
                         // The object isn't a PhotonView. It could be an ObjectIdentifier.
-                        var objectIdentifiers = parent == null ? GameObject.FindObjectsOfType<ObjectIdentifier>() :
-                            parent.GetComponentsInChildren<ObjectIdentifier>();
+                        var objectIdentifiers = parent == null
+                            ? GameObject.FindObjectsOfType<ObjectIdentifier>()
+                            : parent.GetComponentsInChildren<ObjectIdentifier>();
                         if (objectIdentifiers != null)
                         {
-                            for (int i = 0; i < objectIdentifiers.Length; ++i)
+                            for (int i = 0; i < objectIdentifiers.Length; i++)
                             {
                                 if (objectIdentifiers[i].ID == id)
                                 {
@@ -190,10 +190,9 @@ namespace GreedyVox.NetCode.Utilities
                     Debug.LogError("Error: The parent does not contain an inventory.");
                     return null;
                 }
-                var item = inventory.GetCharacterItem(itemIdentifier, itemSlotID);
                 // The item may not exist if it was removed shortly after it was hit on sending client.
-                if (item == null)
-                    return null;
+                var item = inventory.GetCharacterItem(itemIdentifier, itemSlotID);
+                if (item == null) return null;
                 return item.gameObject;
             }
             return gameObject;

@@ -85,14 +85,9 @@ namespace GreedyVox.NetCode.Game
                 else if (NetworkManager.Singleton.IsClient)
                     NetCodeMessenger.Instance.ClientDespawnObject(m_NetworkObject.NetworkObjectId);
             }
-            else
-            {
-                ObjectPool.Destroy(obj);
-            }
+            else { ObjectPool.Destroy(obj); }
             if (m_NetworkObject == null)
-            {
                 m_ActiveGameObjects.Remove(obj);
-            }
         }
         /// <summary>
         /// Called to get an instance of a prefab. Must return valid, disabled GameObject with PhotonView. Required by IPunPrefabPool.
@@ -117,7 +112,6 @@ namespace GreedyVox.NetCode.Game
         /// </summary>
         /// <param name="obj">The object instance to determine if was spawned with the object pool.</param>
         /// <returns>True if the object was spawned with the network object pool.</returns>
-        protected override bool SpawnedWithPoolInternal(GameObject obj)
-        => m_SpawnedGameObjects.Contains(obj);
+        protected override bool SpawnedWithPoolInternal(GameObject obj) => m_SpawnedGameObjects.Contains(obj);
     }
 }

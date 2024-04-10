@@ -64,8 +64,8 @@ namespace GreedyVox.NetCode
                         ByteUnpacker.ReadValuePacked(reader, out Quaternion facing);
                         ByteUnpacker.ReadValuePacked(reader, out Quaternion original);
                         ByteUnpacker.ReadValuePacked(reader, out Quaternion rotation);
-                        InitializeMovingPlatformClientRpc(position, rotation, state, direction,
-                            point, previous, distance, delay, original, time, target, facing, count);
+                        InitializeMovingPlatformRpc(position, rotation, state, direction,
+                        point, previous, distance, delay, original, time, target, facing, count);
                     });
             }
         }
@@ -111,8 +111,8 @@ namespace GreedyVox.NetCode
         /// <summary>
         /// Initialize the moving platform to the same parameters as the server.
         /// </summary>
-        [ClientRpc]
-        private void InitializeMovingPlatformClientRpc(Vector3 position, Quaternion rotation, int activeStates, int pathDirection, int nextWaypoint, int previousWaypoint, float nextWaypointDistance,
+        [Rpc(SendTo.NotMe)]
+        private void InitializeMovingPlatformRpc(Vector3 position, Quaternion rotation, int activeStates, int pathDirection, int nextWaypoint, int previousWaypoint, float nextWaypointDistance,
             float nextWaypointEventDelay, Quaternion originalRotation, float moveTime, Vector3 targetPosition, Quaternion targetRotation, int activeCharacterCount)
         {
             m_Transform.position = position;

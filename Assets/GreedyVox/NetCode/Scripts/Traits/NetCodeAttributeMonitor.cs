@@ -1,4 +1,5 @@
-﻿using Opsive.Shared.Game;
+﻿using Opsive.Shared.Events;
+using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Traits;
 using Unity.Netcode;
 using UnityEngine;
@@ -19,19 +20,31 @@ namespace GreedyVox.NetCode.Traits
         private void Awake() =>
         m_AttributeManager = gameObject.GetCachedComponent<AttributeManager>();
         /// <summary>
+        /// Register for any interested events.
+        /// </summary>
+        private void Start()
+        {
+            if (IsOwner)
+                EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
+        }
+        /// <summary>
+        /// The object has been destroyed.
+        /// </summary>
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
+        }
+        /// <summary>
         /// A player has entered the room. Ensure the joining player is in sync with the current game state.
         /// </summary>
-        public override void OnNetworkSpawn()
+        private void OnPlayerConnected(ulong id, NetworkObjectReference obj)
         {
             var attributes = m_AttributeManager.Attributes;
-            if (attributes != null)
-                for (int i = 0; i < attributes.Length; ++i)
-                    if (IsServer)
-                        UpdateAttributeClientRpc(attributes[i].Name, attributes[i].Value, attributes[i].MinValue, attributes[i].MaxValue,
-                            attributes[i].AutoUpdateAmount, attributes[i].AutoUpdateInterval, attributes[i].AutoUpdateStartDelay, (int)attributes[i].AutoUpdateValueType);
-                    else if (IsOwner)
-                        UpdateAttributeServerRpc(attributes[i].Name, attributes[i].Value, attributes[i].MinValue, attributes[i].MaxValue,
-                            attributes[i].AutoUpdateAmount, attributes[i].AutoUpdateInterval, attributes[i].AutoUpdateStartDelay, (int)attributes[i].AutoUpdateValueType);
+            if (attributes == null) return;
+            for (int i = 0; i < attributes.Length; ++i)
+                UpdateAttributeRpc(attributes[i].Name, attributes[i].Value, attributes[i].MinValue, attributes[i].MaxValue, attributes[i].AutoUpdateAmount,
+                attributes[i].AutoUpdateInterval, attributes[i].AutoUpdateStartDelay, (int)attributes[i].AutoUpdateValueType);
         }
         /// <summary>
         /// Updates the attribute values for the specified attribute.
@@ -44,6 +57,7 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="autoUpdateInterval">The amount of time to wait in between auto update loops.</param>
         /// <param name="autoUpdateStartDelay">The amount of time between a value change and when the auto updater should start.</param>
         /// <param name="autoUpdateValueType">Describes how the attribute should update the value</param>
+        [Rpc(SendTo.NotMe)]
         private void UpdateAttributeRpc(string name, float value, float minValue, float maxValue, float autoUpdateAmount, float autoUpdateInterval, float autoUpdateStartDelay, int autoUpdateValueType)
         {
             var attribute = m_AttributeManager.GetAttribute(name);
@@ -57,19 +71,6 @@ namespace GreedyVox.NetCode.Traits
                 attribute.AutoUpdateStartDelay = autoUpdateStartDelay;
                 attribute.AutoUpdateValueType = (Attribute.AutoUpdateValue)autoUpdateValueType;
             }
-        }
-        [ServerRpc]
-        private void UpdateAttributeServerRpc(string name, float value, float minValue, float maxValue, float autoUpdateAmount, float autoUpdateInterval, float autoUpdateStartDelay, int autoUpdateValueType)
-        {
-            if (!IsClient)
-                UpdateAttributeRpc(name, value, minValue, maxValue, autoUpdateAmount, autoUpdateInterval, autoUpdateStartDelay, autoUpdateValueType);
-            UpdateAttributeClientRpc(name, value, minValue, maxValue, autoUpdateAmount, autoUpdateInterval, autoUpdateStartDelay, autoUpdateValueType);
-        }
-        [ClientRpc]
-        private void UpdateAttributeClientRpc(string name, float value, float minValue, float maxValue, float autoUpdateAmount, float autoUpdateInterval, float autoUpdateStartDelay, int autoUpdateValueType)
-        {
-            if (!IsOwner)
-                UpdateAttributeRpc(name, value, minValue, maxValue, autoUpdateAmount, autoUpdateInterval, autoUpdateStartDelay, autoUpdateValueType);
         }
     }
 }

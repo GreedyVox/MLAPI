@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using GreedyVox.NetCode.Utilities;
+﻿using GreedyVox.NetCode.Utilities;
 using Opsive.Shared.Game;
 using Opsive.Shared.Utility;
 using Opsive.UltimateCharacterController.Inventory;
@@ -25,22 +24,15 @@ namespace GreedyVox.NetCode.Traits
         private Health m_Health;
         private InventoryBase m_Inventory;
         private GameObject m_GamingObject;
-        private NetCodeSettingsAbstract m_Settings;
-        private Dictionary<ulong, NetworkObject> m_NetworkObjects;
         /// <summary>
         /// Initializes the default values.
         /// </summary>
         private void Awake()
         {
             m_GamingObject = gameObject;
-            m_Settings = NetCodeManager.Instance.NetworkSettings;
             m_Health = m_GamingObject.GetCachedComponent<Health>();
+            m_Inventory = m_GamingObject.GetCachedComponent<InventoryBase>();
         }
-        /// <summary>
-        /// Gets called when message handlers are ready to be registered and the networking is setup
-        /// </summary>
-        public override void OnNetworkSpawn() =>
-        m_NetworkObjects = NetworkManager.Singleton.SpawnManager.SpawnedObjects;
         /// <summary>
         /// Spawn objects on death over the network.
         /// <param name="position">The position of the damage.</param>
@@ -95,9 +87,17 @@ namespace GreedyVox.NetCode.Traits
             if (source != null)
             {
                 // If the originator is an item then more data needs to be sent.
+                CharacterItemAction itemAction = null;
                 if (source is CharacterItemAction)
                 {
-                    var itemAction = source as CharacterItemAction;
+                    itemAction = source as CharacterItemAction;
+                }
+                else if (source is Explosion)
+                {
+                    itemAction = source.OwnerDamageSource as CharacterItemAction;
+                }
+                if (itemAction != null)
+                {
                     sourceItemActionID = itemAction.ID;
                     sourceSlotID = itemAction.CharacterItem.SlotID;
                     sourceItemIdentifierID = itemAction.CharacterItem.ItemIdentifier.ID;
@@ -124,12 +124,8 @@ namespace GreedyVox.NetCode.Traits
                 hitColliderPair = NetCodeUtility.GetID(hitCollider.gameObject, out hitItemSlotID);
             else
                 hitColliderPair = (0UL, false);
-            if (IsServer)
-                DamageClientRpc(amount, position, direction, forceMagnitude, frames, radius, sourceNetworkObject,
-                sourceItemIdentifierID, sourceSlotID, sourceItemActionID, hitColliderPair.ID, hitItemSlotID);
-            else
-                DamageServerRpc(amount, position, direction, forceMagnitude, frames, radius, sourceNetworkObject,
-                sourceItemIdentifierID, sourceSlotID, sourceItemActionID, hitColliderPair.ID, hitItemSlotID);
+            DamageRpc(amount, position, direction, forceMagnitude, frames, radius, sourceNetworkObject,
+            sourceItemIdentifierID, sourceSlotID, sourceItemActionID, hitColliderPair.ID, hitItemSlotID);
         }
         /// <summary>
         /// The object has taken been damaged on the network.
@@ -146,6 +142,8 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="sourceItemActionID">The ID of the source's ItemAction.</param>
         /// <param name="hitColliderID">The PhotonView or ObjectIdentifier ID of the Collider that was hit.</param>
         /// <param name="hitItemSlotID">If the hit collider is an item then the slot ID of the item will be specified.</param>
+        /// 
+        [Rpc(SendTo.Everyone)]
         private void DamageRpc(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius,
         NetworkObjectReference sourceNetworkObject, uint sourceItemIdentifierID, int sourceSlotID, int sourceItemActionID, ulong hitColliderID, int hitItemSlotID)
         {
@@ -173,21 +171,6 @@ namespace GreedyVox.NetCode.Traits
             m_Health.OnDamage(pooledDamageData);
             GenericObjectPool.Return(pooledDamageData);
         }
-        [ServerRpc(RequireOwnership = false)]
-        private void DamageServerRpc(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius, NetworkObjectReference sourceNetworkObject,
-        uint sourceItemIdentifierID, int sourceSlotID, int sourceItemActionID, ulong hitColliderID, int hitItemSlotID)
-        {
-            if (!IsClient) DamageRpc(amount, position, direction, forceMagnitude, frames, radius, sourceNetworkObject, sourceItemIdentifierID,
-                           sourceSlotID, sourceItemActionID, hitColliderID, hitItemSlotID);
-            DamageClientRpc(amount, position, direction, forceMagnitude, frames, radius, sourceNetworkObject, sourceItemIdentifierID,
-                           sourceSlotID, sourceItemActionID, hitColliderID, hitItemSlotID);
-        }
-
-        [ClientRpc]
-        private void DamageClientRpc(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius, NetworkObjectReference sourceNetworkObject,
-        uint sourceItemIdentifierID, int sourceSlotID, int sourceItemActionID, ulong hitColliderID, int hitItemSlotID) =>
-        DamageRpc(amount, position, direction, forceMagnitude, frames, radius, sourceNetworkObject,
-        sourceItemIdentifierID, sourceSlotID, sourceItemActionID, hitColliderID, hitItemSlotID);
         /// <summary>
         /// The object is no longer alive.
         /// </summary>
@@ -197,24 +180,22 @@ namespace GreedyVox.NetCode.Traits
         public void Die(Vector3 position, Vector3 force, GameObject attacker)
         {
             // An attacker is not required. If one exists it must have a NetworkObject component attached for identification purposes.
-            var attackerID = -1L;
+            NetworkObject attackerObject = null;
             if (attacker != null)
             {
-                var attackerObject = attacker.GetCachedComponent<NetworkObject>();
+                attackerObject = attacker.GetCachedComponent<NetworkObject>();
                 if (attackerObject == null)
                 {
                     Debug.LogError("Error: The attacker " + attacker.name + " must have a NetworkObject component.");
                     return;
                 }
-                attackerID = (long)attackerObject.NetworkObjectId;
             }
             if (IsServer)
             {
                 SpawnObjectsOnDeath(position, force);
                 NetworkObjectPool.Destroy(gameObject);
-                DieClientRpc(position, force, attackerID);
             }
-            else { DieServerRpc(position, force, attackerID); }
+            DieRpc(position, force, attackerObject);
         }
         /// <summary>
         /// The object is no longer alive on the network.
@@ -222,51 +203,23 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="position">The position of the damage.</param>
         /// <param name="force">The amount of force applied to the object while taking the damage.</param>
         /// <param name="attackerID">The NetworkObject ID of the GameObject that killed the object.</param>
-        private void DieRpc(Vector3 position, Vector3 force, long attackerID)
+        /// 
+        [Rpc(SendTo.NotMe)]
+        private void DieRpc(Vector3 position, Vector3 force, NetworkObjectReference obj)
         {
-            GameObject attacker = null;
-            if (attackerID != -1
-             && m_NetworkObjects.TryGetValue((ulong)attackerID, out var obj))
-                attacker = obj.gameObject;
-            m_Health.Die(position, force, attacker != null ? attacker.gameObject : null);
-        }
-        [ServerRpc]
-        private void DieServerRpc(Vector3 position, Vector3 force, long attackerID)
-        {
-            SpawnObjectsOnDeath(position, force);
-            NetworkObjectPool.Destroy(gameObject);
-            if (!IsClient) DieRpc(position, force, attackerID);
-            DieClientRpc(position, force, attackerID);
-        }
-        [ClientRpc]
-        private void DieClientRpc(Vector3 position, Vector3 force, long attackerID)
-        {
-            if (!IsOwner) DieRpc(position, force, attackerID);
+            obj.TryGet(out var attacker);
+            m_Health.Die(position, force, attacker?.gameObject);
         }
         /// <summary>
         /// Adds amount to health and then to the shield if there is still an amount remaining. Will not go over the maximum health or shield value.
         /// </summary>
         /// <param name="amount">The amount of health or shield to add.</param>
-        public void Heal(float amount)
-        {
-            if (IsServer) HealClientRpc(amount);
-            else HealServerRpc(amount);
-        }
+        public void Heal(float amount) => HealRpc(amount);
         /// <summary>
         /// Adds amount to health and then to the shield if there is still an amount remaining on the network.
         /// </summary>
         /// <param name="amount">The amount of health or shield to add.</param>
+        [Rpc(SendTo.NotMe)]
         private void HealRpc(float amount) => m_Health.Heal(amount);
-        [ServerRpc]
-        private void HealServerRpc(float amount)
-        {
-            if (!IsClient) HealRpc(amount);
-            HealClientRpc(amount);
-        }
-        [ClientRpc]
-        private void HealClientRpc(float amount)
-        {
-            if (!IsOwner) HealRpc(amount);
-        }
     }
 }

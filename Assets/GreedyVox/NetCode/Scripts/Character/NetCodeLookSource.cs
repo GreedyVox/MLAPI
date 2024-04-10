@@ -14,17 +14,6 @@ namespace GreedyVox.NetCode.Character
     [DisallowMultipleComponent]
     public class NetCodeLookSource : NetworkBehaviour, ILookSource
     {
-        /// <summary>
-        /// Specifies which look source objects are dirty.
-        /// </summary>
-        private enum TransformDirtyFlags : byte
-        {
-            LookDirectionDistance = 1, // The Look Direction Distance has changed.
-            Pitch = 2, // The Pitch has changed.
-            LookPosition = 4, // The Look Position has changed.
-            LookDirection = 8, // The Look Direction has changed.
-        }
-
         [Tooltip("A multiplier to apply to the networked values for remote players.")]
         [SerializeField] protected float m_RemoteInterpolationMultiplayer = 1.2f;
         private byte m_Flag;
@@ -34,7 +23,6 @@ namespace GreedyVox.NetCode.Character
         private GameObject m_GameObject;
         private ILookSource m_LookSource;
         private bool m_InitialSync = true;
-        private IReadOnlyList<ulong> m_Clients;
         private NetCodeManager m_NetworkManager;
         private FastBufferWriter m_FastBufferWriter;
         private string m_MsgNameClient, m_MsgNameServer;
@@ -49,6 +37,17 @@ namespace GreedyVox.NetCode.Character
         public Transform Transform { get { return m_Transform; } }
         public float LookDirectionDistance { get { return m_NetworkLookDirectionDistance; } }
         public float Pitch { get { return m_NetworkPitch; } }
+        /// <summary>
+        /// Specifies which look source objects are dirty.
+        /// </summary>
+        private enum TransformDirtyFlags : byte
+        {
+            LookDirectionDistance = 1, // The Look Direction Distance has changed.
+            Pitch = 2, // The Pitch has changed.
+            LookPosition = 4, // The Look Position has changed.
+            LookDirection = 8, // The Look Direction has changed.
+        }
+
         /// <summary>
         /// Initialize the default values.
         /// </summary>
@@ -105,28 +104,26 @@ namespace GreedyVox.NetCode.Character
             m_CustomMessagingManager = NetworkManager.Singleton.CustomMessagingManager;
 
             if (IsServer)
-            {
-                m_Clients = NetworkManager.Singleton.ConnectedClientsIds;
                 m_NetworkManager.NetworkSettings.NetworkSyncServerEvent += OnNetworkSyncServerEvent;
-            }
             else if (IsOwner)
-            {
                 m_NetworkManager.NetworkSettings.NetworkSyncClientEvent += OnNetworkSyncClientEvent;
-            }
-
             if (!IsOwner)
             {
                 m_NetworkManager.NetworkSettings.NetworkSyncUpdateEvent += OnNetworkSyncUpdateEvent;
                 if (IsServer)
+                {
                     m_CustomMessagingManager?.RegisterNamedMessageHandler(m_MsgNameServer, (sender, reader) =>
                     {
                         SerializeView(ref reader);
                     });
+                }
                 else
+                {
                     m_CustomMessagingManager?.RegisterNamedMessageHandler(m_MsgNameClient, (sender, reader) =>
                     {
                         SerializeView(ref reader);
                     });
+                }
             }
         }
         /// <summary>
@@ -155,9 +152,9 @@ namespace GreedyVox.NetCode.Character
                 using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
                     if (IsOwner)
                         if (SerializeView())
-                            m_CustomMessagingManager?.SendNamedMessage(m_MsgNameClient, m_Clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+                            m_CustomMessagingManager?.SendNamedMessageToAll(m_MsgNameClient, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
                         else if (SerializeView(ref m_Flag))
-                            m_CustomMessagingManager?.SendNamedMessage(m_MsgNameClient, m_Clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+                            m_CustomMessagingManager?.SendNamedMessageToAll(m_MsgNameClient, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
                 m_Flag = 0;
             }
         }

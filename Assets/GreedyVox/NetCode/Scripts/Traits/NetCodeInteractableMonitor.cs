@@ -13,16 +13,11 @@ namespace GreedyVox.NetCode.Traits
 {
     public class NetCodeInteractableMonitor : NetworkBehaviour, INetworkInteractableMonitor
     {
-        private GameObject m_GameObject;
         private Interactable m_Interactable;
         /// <summary>
         /// Initializes the default values.
         /// </summary>
-        private void Awake()
-        {
-            m_GameObject = gameObject;
-            m_Interactable = m_GameObject.GetCachedComponent<Interactable>();
-        }
+        private void Awake() => m_Interactable = gameObject.GetCachedComponent<Interactable>();
         /// <summary>
         /// Performs the interaction.
         /// </summary>
@@ -32,40 +27,28 @@ namespace GreedyVox.NetCode.Traits
         {
             var net = character.GetCachedComponent<NetworkObject>();
             if (net == null)
+            {
                 Debug.LogError("Error: The character " + character.name + " must have a NetworkObject component.");
-            else if (IsServer)
-                InteractClientRpc(net, interactAbility.Index);
-            else
-                InteractServerRpc(net, interactAbility.Index);
+                return;
+            }
+            InteractRpc(net, interactAbility.Index);
         }
         /// <summary>
         /// Performs the interaction on the network.
         /// </summary>
         /// <param name="character">The character that performed the interaction.</param>
         /// <param name="abilityIndex">The index of the Interact ability that performed the interaction.</param>
+        [Rpc(SendTo.NotMe)]
         private void InteractRpc(NetworkObjectReference character, int abilityIndex)
         {
-            if (character.TryGet(out var net))
+            if (!character.TryGet(out var net)) return;
+            var go = net.gameObject;
+            var characterLocomotion = go.GetCachedComponent<UltimateCharacterLocomotion>();
+            if (characterLocomotion != null)
             {
-                var go = net.gameObject;
-                var characterLocomotion = go.GetCachedComponent<UltimateCharacterLocomotion>();
-                if (characterLocomotion != null)
-                {
-                    var interact = characterLocomotion.GetAbility<Interact>(abilityIndex);
-                    m_Interactable.Interact(go, interact);
-                }
+                var interact = characterLocomotion.GetAbility<Interact>(abilityIndex);
+                m_Interactable.Interact(go, interact);
             }
-        }
-        [ServerRpc]
-        private void InteractServerRpc(NetworkObjectReference character, int abilityIndex)
-        {
-            if (!IsClient) InteractRpc(character, abilityIndex);
-            InteractClientRpc(character, abilityIndex);
-        }
-        [ClientRpc]
-        private void InteractClientRpc(NetworkObjectReference character, int abilityIndex)
-        {
-            if (!IsOwner) InteractRpc(character, abilityIndex);
         }
     }
 }

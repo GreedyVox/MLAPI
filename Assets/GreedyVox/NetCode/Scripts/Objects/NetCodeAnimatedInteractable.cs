@@ -27,13 +27,13 @@ namespace GreedyVox.NetCode.Objects
         /// <summary>
         /// Registering events.
         /// </summary>
-        private void OnEnable()
-        => EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
+        private void OnEnable() =>
+        EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
         /// <summary>
         /// Removing events.
         /// </summary>
-        private void OnDisable()
-        => EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
+        private void OnDisable() =>
+        EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
         /// <summary>
         /// A event from Photon has been sent.
         /// </summary>
@@ -43,14 +43,12 @@ namespace GreedyVox.NetCode.Objects
         {
             // If isn't the Server/Host then we should early return here!
             if (!NetworkManager.Singleton.IsServer || !m_HasInteracted) return;
-            var client = new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { id } } };
-            InteractedRpc(client);
+            InteractedRpc();
         }
         /// <summary>
         /// Indicates that the GameObject has been interacted with.
         /// </summary>
-        [ClientRpc]
-        private void InteractedRpc(ClientRpcParams clientRpcParams = default)
-        => m_HasInteracted = true;
+        [Rpc(SendTo.NotMe)]
+        private void InteractedRpc() => m_HasInteracted = true;
     }
 }

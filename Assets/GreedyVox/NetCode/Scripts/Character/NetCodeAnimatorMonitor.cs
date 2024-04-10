@@ -35,8 +35,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetHorizontalMovementParameter(float value, float timeScale, float dampingTime)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetHorizontalMovementParameter(value, timeScale, dampingTime))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetHorizontalMovementParameter(value, timeScale, dampingTime))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.HorizontalMovement;
                 return true;
@@ -53,8 +53,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetForwardMovementParameter(float value, float timeScale, float dampingTime)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetForwardMovementParameter(value, timeScale, dampingTime))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetForwardMovementParameter(value, timeScale, dampingTime))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.ForwardMovement;
                 return true;
@@ -71,8 +71,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetPitchParameter(float value, float timeScale, float dampingTime)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetPitchParameter(value, timeScale, dampingTime))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetPitchParameter(value, timeScale, dampingTime))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.Pitch;
                 return true;
@@ -89,8 +89,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetYawParameter(float value, float timeScale, float dampingTime)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetYawParameter(value, timeScale, dampingTime))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetYawParameter(value, timeScale, dampingTime))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.Yaw;
                 return true;
@@ -107,8 +107,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetSpeedParameter(float value, float timeScale, float dampingTime)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetSpeedParameter(value, timeScale, dampingTime))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetSpeedParameter(value, timeScale, dampingTime))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.Speed;
                 return true;
@@ -123,8 +123,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetHeightParameter(float value)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetHeightParameter(value))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetHeightParameter(value))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.Height;
                 return true;
@@ -139,8 +139,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetMovingParameter(bool value)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetMovingParameter(value))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetMovingParameter(value))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.Moving;
                 return true;
@@ -155,8 +155,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetAimingParameter(bool value)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetAimingParameter(value))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetAimingParameter(value))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.Aiming;
                 return true;
@@ -171,8 +171,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetMovementSetIDParameter(int value)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetMovementSetIDParameter(value))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetMovementSetIDParameter(value))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.MovementSetID;
                 return true;
@@ -187,8 +187,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetAbilityIndexParameter(int value)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetAbilityIndexParameter(value))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetAbilityIndexParameter(value))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.AbilityIndex;
                 return true;
@@ -203,8 +203,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetAbilityIntDataParameter(int value)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetAbilityIntDataParameter(value))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetAbilityIntDataParameter(value))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.AbilityIntData;
                 return true;
@@ -221,8 +221,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetAbilityFloatDataParameter(float value, float timeScale, float dampingTime)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetAbilityFloatDataParameter(value, timeScale, dampingTime))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetAbilityFloatDataParameter(value, timeScale, dampingTime))
             {
                 m_CharacterAnimatorMonitor.DirtyFlag |= (short)NetCodeCharacterAnimatorMonitor.ParameterDirtyFlags.AbilityFloatData;
                 return true;
@@ -237,8 +237,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetItemIDParameter(int slotID, int value)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetItemIDParameter(slotID, value))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetItemIDParameter(slotID, value))
             {
                 m_CharacterAnimatorMonitor.ItemDirtySlot |= (byte)(slotID + 1);
                 return true;
@@ -255,8 +255,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetItemStateIndexParameter(int slotID, int value, bool forceChange)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetItemStateIndexParameter(slotID, value, forceChange))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetItemStateIndexParameter(slotID, value, forceChange))
             {
                 m_CharacterAnimatorMonitor.ItemDirtySlot |= (byte)(slotID + 1);
                 return true;
@@ -273,8 +273,8 @@ namespace GreedyVox.NetCode.Character
         public override bool SetItemSubstateIndexParameter(int slotID, int value, bool forceChange)
         {
             // The animator may not be enabled. Return silently.
-            if (!m_Animator.isActiveAndEnabled) return false;
-            if (base.SetItemSubstateIndexParameter(slotID, value, forceChange))
+            if (m_Animator.isActiveAndEnabled
+            && base.SetItemSubstateIndexParameter(slotID, value, forceChange))
             {
                 m_CharacterAnimatorMonitor.ItemDirtySlot |= (byte)(slotID + 1);
                 return true;

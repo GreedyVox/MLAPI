@@ -102,10 +102,8 @@ namespace GreedyVox.NetCode.Ai
         /// <summary>
         /// Returns the maximus size for the fast buffer writer
         /// </summary>               
-        private int MaxBufferSize()
-        {
-            return sizeof(byte) + sizeof(long) + sizeof(float) * 3 * 4;
-        }
+        private int MaxBufferSize() =>
+        sizeof(byte) + sizeof(long) + sizeof(float) * 3 * 4;
         /// <summary>
         /// Network broadcast event called from the NetCodeSyncRate component
         /// </summary>

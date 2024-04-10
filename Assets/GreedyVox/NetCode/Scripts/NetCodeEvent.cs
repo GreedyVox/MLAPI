@@ -10,13 +10,13 @@ namespace GreedyVox.NetCode
     [DisallowMultipleComponent]
     public class NetCodeEvent : NetworkBehaviour
     {
-        public EventNetworkSpawn NetworkSpawnEvent;
-        public delegate void EventNetworkSpawn();
         public EventNetworkDespawn NetworkDespawnEvent;
+        public EventNetworkSpawn NetworkSpawnEvent;
         public delegate void EventNetworkDespawn();
-        private ulong m_ServerID;
+        public delegate void EventNetworkSpawn();
         private NetworkTransport m_Transport;
         private Coroutine m_Coroutine;
+        private ulong m_ServerID;
         private void OnDisable()
         {
             NetworkSpawnEvent = null;
@@ -35,9 +35,7 @@ namespace GreedyVox.NetCode
             m_ServerID = NetworkManager.ServerClientId;
             m_Transport = NetworkManager.Singleton.NetworkConfig.NetworkTransport;
             if (IsLocalPlayer && m_Transport != null && m_Coroutine == null)
-            {
                 m_Coroutine = StartCoroutine(NetworkTimer());
-            }
         }
         /// <summary>
         /// Send the ping result to be reported.

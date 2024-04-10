@@ -1,9 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using Opsive.Shared.Events;
 using Opsive.Shared.Input.VirtualControls;
 using Unity.Netcode;
-using UnityEngine;
 
 namespace GreedyVox.NetCode.Input
 {

@@ -15,17 +15,6 @@ namespace GreedyVox.NetCode.Objects
     // [RequireComponent (typeof (NetCodeSyncRate))]
     public class NetCodeLocationMonitor : NetworkBehaviour
     {
-        /// <summary>
-        /// Specifies which transform objects are dirty.
-        /// </summary>
-        private enum TransformDirtyFlags : byte
-        {
-            Position = 1, // The position has changed.
-            RigidbodyVelocity = 2, // The Rigidbody velocity has changed.
-            Rotation = 4, // The rotation has changed.
-            RigidbodyAngularVelocity = 8, // The Rigidbody angular velocity has changed.
-            Scale = 16 // The scale has changed.
-        }
         [Tooltip("Should the GameObject's active state be syncornized?")]
         [SerializeField] protected bool m_SynchronizeActiveState = true;
         [Tooltip("Should the transform's position be synchronized?")]
@@ -48,7 +37,17 @@ namespace GreedyVox.NetCode.Objects
         private CustomMessagingManager m_CustomMessagingManager;
         private float m_NetCodeTime, m_Angle, m_Distance = 0.0f;
         private Vector3 m_NetworkRigidbodyAngularVelocity, m_NetworkRigidbodyVelocity, m_NetworkPosition, m_NetworkScale;
-
+        /// <summary>
+        /// Specifies which transform objects are dirty.
+        /// </summary>
+        private enum TransformDirtyFlags : byte
+        {
+            Position = 1, // The position has changed.
+            RigidbodyVelocity = 2, // The Rigidbody velocity has changed.
+            Rotation = 4, // The rotation has changed.
+            RigidbodyAngularVelocity = 8, // The Rigidbody angular velocity has changed.
+            Scale = 16 // The scale has changed.
+        }
         /// <summary>
         /// Initialize the default values.
         /// </summary>
