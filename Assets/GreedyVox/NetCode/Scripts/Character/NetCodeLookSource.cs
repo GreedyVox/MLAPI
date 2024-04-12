@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Opsive.Shared.Events;
+﻿using Opsive.Shared.Events;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Character;
 using Unity.Collections;
@@ -22,7 +21,6 @@ namespace GreedyVox.NetCode.Character
         private Transform m_Transform;
         private GameObject m_GameObject;
         private ILookSource m_LookSource;
-        private bool m_InitialSync = true;
         private NetCodeManager m_NetworkManager;
         private FastBufferWriter m_FastBufferWriter;
         private string m_MsgNameClient, m_MsgNameServer;
@@ -47,7 +45,6 @@ namespace GreedyVox.NetCode.Character
             LookPosition = 4, // The Look Position has changed.
             LookDirection = 8, // The Look Direction has changed.
         }
-
         /// <summary>
         /// Initialize the default values.
         /// </summary>
@@ -107,29 +104,39 @@ namespace GreedyVox.NetCode.Character
                 m_NetworkManager.NetworkSettings.NetworkSyncServerEvent += OnNetworkSyncServerEvent;
             else if (IsOwner)
                 m_NetworkManager.NetworkSettings.NetworkSyncClientEvent += OnNetworkSyncClientEvent;
+            else OnNetworkSyncEventRpc();
+
             if (!IsOwner)
             {
                 m_NetworkManager.NetworkSettings.NetworkSyncUpdateEvent += OnNetworkSyncUpdateEvent;
-                if (IsServer)
-                {
-                    m_CustomMessagingManager?.RegisterNamedMessageHandler(m_MsgNameServer, (sender, reader) =>
-                    {
-                        SerializeView(ref reader);
-                    });
-                }
-                else
-                {
-                    m_CustomMessagingManager?.RegisterNamedMessageHandler(m_MsgNameClient, (sender, reader) =>
-                    {
-                        SerializeView(ref reader);
-                    });
-                }
+                m_CustomMessagingManager?.RegisterNamedMessageHandler(IsServer ? m_MsgNameServer : m_MsgNameClient, (sender, reader) =>
+                { SerializeView(ref reader); });
             }
         }
         /// <summary>
         /// Returns the maximus size for the fast buffer writer
         /// </summary>               
         private int MaxBufferSize() => sizeof(byte) + sizeof(float) * 2 + sizeof(float) * 3 * 3;
+        /// <summary>
+        /// A player connected syncing event sent.
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void OnNetworkSyncEventRpc(RpcParams rpc = default)
+        {
+            SetNetworkSyncEventRpc(m_NetworkLookPosition, m_NetworkLookDirection, m_NetworkLookDirectionDistance,
+            m_NetworkPitch, RpcTarget.Single(rpc.Receive.SenderClientId, RpcTargetUse.Temp));
+        }
+        /// <summary>
+        /// Sync all players already connected to the server.
+        /// </summary>
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void SetNetworkSyncEventRpc(Vector3 position, Vector3 direction, float distance, float pitch, RpcParams rpc)
+        {
+            m_NetworkLookDirectionDistance = distance;
+            m_NetworkPitch = pitch;
+            m_NetworkLookPosition = position;
+            m_NetworkLookDirection = direction;
+        }
         /// <summary>
         /// Network sync event called from the NetworkInfo component
         /// </summary>
@@ -185,14 +192,6 @@ namespace GreedyVox.NetCode.Character
                 ByteUnpacker.ReadValuePacked(reader, out m_NetworkTargetLookPosition);
             if ((m_Flag & (byte)TransformDirtyFlags.LookDirection) != 0)
                 ByteUnpacker.ReadValuePacked(reader, out m_NetworkTargetLookDirection);
-            if (m_InitialSync)
-            {
-                m_NetworkLookDirectionDistance = m_NetworkTargetLookDirectionDistance;
-                m_NetworkPitch = m_NetworkTargetPitch;
-                m_NetworkLookPosition = m_NetworkTargetLookPosition;
-                m_NetworkLookDirection = m_NetworkTargetLookDirection;
-                m_InitialSync = false;
-            }
         }
         /// <summary>
         /// Called several times per second, so that your script can write synchronization data.

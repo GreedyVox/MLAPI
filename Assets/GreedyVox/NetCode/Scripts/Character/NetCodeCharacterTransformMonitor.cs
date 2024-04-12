@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.IO.Pipes;
 using Opsive.Shared.Events;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Character;
@@ -24,10 +24,10 @@ namespace GreedyVox.NetCode.Character
         private bool m_InitialSync = true;
         private Transform m_Transform;
         private ulong m_PlatformID, m_ServerID;
-        private NetCodeManager m_NetworkManager;
         private FastBufferWriter m_FastBufferWriter;
         private string m_MsgNameClient, m_MsgNameServer;
         private float m_NetCodeTime, m_Distance, m_Angle;
+        private NetCodeSettingsAbstract m_NetworkSettings;
         private CharacterFootEffects m_CharacterFootEffects;
         private CustomMessagingManager m_CustomMessagingManager;
         private UltimateCharacterLocomotion m_CharacterLocomotion;
@@ -53,12 +53,19 @@ namespace GreedyVox.NetCode.Character
             m_NetworkScale = m_Transform.localScale;
             m_NetworkPosition = m_Transform.position;
             m_NetworkRotation = m_Transform.rotation;
-            m_NetworkManager = NetCodeManager.Instance;
+            m_NetworkSettings = NetCodeManager.Instance.NetworkSettings;
             m_CharacterFootEffects = gameObject.GetCachedComponent<CharacterFootEffects>();
             m_CharacterLocomotion = gameObject.GetCachedComponent<UltimateCharacterLocomotion>();
-
             EventHandler.RegisterEvent(gameObject, "OnRespawn", OnRespawn);
             EventHandler.RegisterEvent<bool>(gameObject, "OnCharacterImmediateTransformChange", OnImmediateTransformChange);
+        }
+        /// <summary>
+        /// The character has been enabled.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (m_NetworkSettings == null)
+                enabled = false;
         }
         /// <summary>
         /// The character has been destroyed.
@@ -76,9 +83,9 @@ namespace GreedyVox.NetCode.Character
         {
             m_CustomMessagingManager?.UnregisterNamedMessageHandler(m_MsgNameServer);
             m_CustomMessagingManager?.UnregisterNamedMessageHandler(m_MsgNameClient);
-            m_NetworkManager.NetworkSettings.NetworkSyncServerEvent -= OnNetworkSyncServerEvent;
-            m_NetworkManager.NetworkSettings.NetworkSyncClientEvent -= OnNetworkSyncClientEvent;
-            m_NetworkManager.NetworkSettings.NetworkSyncUpdateEvent -= OnNetworkSyncUpdateEvent;
+            m_NetworkSettings.NetworkSyncServerEvent -= OnNetworkSyncServerEvent;
+            m_NetworkSettings.NetworkSyncClientEvent -= OnNetworkSyncClientEvent;
+            m_NetworkSettings.NetworkSyncUpdateEvent -= OnNetworkSyncUpdateEvent;
         }
         /// <summary>
         /// Gets called when message handlers are ready to be registered and the networking is setup.
@@ -91,33 +98,47 @@ namespace GreedyVox.NetCode.Character
             m_MsgNameServer = $"{OwnerClientId}MsgServerTransform{NetworkObjectId}";
 
             if (IsServer)
-                m_NetworkManager.NetworkSettings.NetworkSyncServerEvent += OnNetworkSyncServerEvent;
+                m_NetworkSettings.NetworkSyncServerEvent += OnNetworkSyncServerEvent;
             else if (IsOwner)
-                m_NetworkManager.NetworkSettings.NetworkSyncClientEvent += OnNetworkSyncClientEvent;
+                m_NetworkSettings.NetworkSyncClientEvent += OnNetworkSyncClientEvent;
+            else OnNetworkSyncEventRpc();
 
             if (!IsOwner)
             {
-                m_NetworkManager.NetworkSettings.NetworkSyncUpdateEvent += OnNetworkSyncUpdateEvent;
-                if (IsServer)
-                {
-                    m_CustomMessagingManager?.RegisterNamedMessageHandler(m_MsgNameServer, (sender, reader) =>
-                    {
-                        Serialize(ref reader);
-                    });
-                }
-                else
-                {
-                    m_CustomMessagingManager?.RegisterNamedMessageHandler(m_MsgNameClient, (sender, reader) =>
-                    {
-                        Serialize(ref reader);
-                    });
-                }
+                m_NetworkSettings.NetworkSyncUpdateEvent += OnNetworkSyncUpdateEvent;
+                m_CustomMessagingManager?.RegisterNamedMessageHandler(IsServer ? m_MsgNameServer : m_MsgNameClient, (sender, reader) =>
+                { Serialize(ref reader); });
             }
         }
         /// <summary>
         /// Returns the maximus size for the fast buffer writer
         /// </summary>               
         private int MaxBufferSize() => sizeof(byte) + sizeof(long) + sizeof(float) * 3 * 4;
+        /// <summary>
+        /// A player connected syncing event sent.
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void OnNetworkSyncEventRpc(RpcParams rpc = default)
+        {
+            var platform = m_CharacterLocomotion.MovingPlatform?.gameObject.GetCachedComponent<NetworkObject>();
+            SetNetworkSyncEventRpc(m_Transform.rotation, m_Transform.position, m_Transform.localScale,
+            platform == null ? 0UL : platform.NetworkObjectId, RpcTarget.Single(rpc.Receive.SenderClientId, RpcTargetUse.Temp));
+        }
+        /// <summary>
+        /// Sync all players already connected to the server.
+        /// </summary>
+        /// <param name="rotation">The rotation of the player.</param>
+        /// <param name="position">The position of the player.</param>
+        /// <param name="rpc">The client that sent the syncing event.</param>
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void SetNetworkSyncEventRpc(Quaternion rotation, Vector3 position, Vector3 scale, ulong pid, RpcParams rpc)
+        {
+            m_Transform.localScale = scale;
+            m_Transform.rotation = rotation;
+            m_Transform.position = position;
+            if (pid > 0 && NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(pid, out var platform))
+                m_CharacterLocomotion.SetMovingPlatform(platform.transform, true);
+        }
         /// <summary>
         /// Network sync event called from the NetworkInfo component
         /// </summary>
@@ -163,7 +184,7 @@ namespace GreedyVox.NetCode.Character
         {
             // When the character is on a moving platform the position and rotation is relative to that platform.
             // This allows the character to stay on the platform even though the platform will not be in the exact same location between any two instances.
-            var serializationRate = m_NetworkManager.NetworkSettings.SyncRateClient * m_RemoteInterpolationMultiplayer;
+            var serializationRate = m_NetworkSettings.SyncRateClient * m_RemoteInterpolationMultiplayer;
             if (m_CharacterLocomotion.MovingPlatform != null)
             {
 #if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER

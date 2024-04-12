@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using GreedyVox.NetCode.Game;
+using Opsive.Shared.Events;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Networking.Game;
 using Unity.Collections;
@@ -12,7 +13,7 @@ using UnityEngine;
 namespace GreedyVox.NetCode.Objects
 {
     [DisallowMultipleComponent]
-    // [RequireComponent (typeof (NetCodeSyncRate))]
+    [RequireComponent(typeof(NetCodeSyncRate))]
     public class NetCodeLocationMonitor : NetworkBehaviour
     {
         [Tooltip("Should the GameObject's active state be syncornized?")]
@@ -24,16 +25,17 @@ namespace GreedyVox.NetCode.Objects
         [Tooltip("Should the transform's scale be synchronized?")]
         [SerializeField] protected bool m_SynchronizeScale;
         private byte m_Flag;
+        private ulong m_ServerID;
         private int m_MaxBufferSize;
         private Rigidbody m_Rigidbody;
         private Transform m_Transform;
-        private string m_MsgName;
         private GameObject m_GameObject;
         private bool m_InitialSync = true;
         private Quaternion m_NetworkRotation;
         private NetCodeSyncRate m_NetworkSync;
         private FastBufferWriter m_FastBufferWriter;
-        private NetCodeSettingsAbstract m_Settings;
+        private string m_MsgNameClient, m_MsgNameServer;
+        private NetCodeSettingsAbstract m_NetworkSettings;
         private CustomMessagingManager m_CustomMessagingManager;
         private float m_NetCodeTime, m_Angle, m_Distance = 0.0f;
         private Vector3 m_NetworkRigidbodyAngularVelocity, m_NetworkRigidbodyVelocity, m_NetworkPosition, m_NetworkScale;
@@ -59,9 +61,16 @@ namespace GreedyVox.NetCode.Objects
             m_Rigidbody = GetComponent<Rigidbody>();
             m_NetworkPosition = m_Transform.position;
             m_NetworkRotation = m_Transform.rotation;
-            m_Settings = NetCodeManager.Instance.NetworkSettings;
+            m_NetworkSettings = NetCodeManager.Instance.NetworkSettings;
+            if (m_NetworkSettings == null)
+                enabled = false;
             m_NetworkSync = gameObject.GetCachedComponent<NetCodeSyncRate>();
         }
+        /// <summary>
+        /// Removing events.
+        /// </summary>
+        private void OnDisable() =>
+        EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
         /// <summary>
         /// The object has been enabled.
         /// </summary>
@@ -71,64 +80,95 @@ namespace GreedyVox.NetCode.Objects
             // If the object is pooled then the network object pool will manage the active state.
             if (m_SynchronizeActiveState && NetCodeObjectPool.SpawnedWithPool(m_GameObject))
                 m_SynchronizeActiveState = false;
+            EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
         }
         /// <summary>
         /// The object has been despawned.
         /// </summary>
         public override void OnNetworkDespawn()
         {
-            m_NetworkSync.NetworkSyncEvent -= OnNetworkSyncEvent;
-            m_Settings.NetworkSyncUpdateEvent -= OnNetworkSyncUpdateEvent;
-            m_Settings.NetworkSyncFixedUpdateEvent -= OnNetworkSyncFixedUpdateEvent;
-            m_CustomMessagingManager?.UnregisterNamedMessageHandler(m_MsgName);
+            m_NetworkSync.NetworkSyncEvent -= OnNetworkSyncServerEvent;
+            m_NetworkSettings.NetworkSyncClientEvent -= OnNetworkSyncClientEvent;
+            m_NetworkSettings.NetworkSyncUpdateEvent -= OnNetworkSyncUpdateEvent;
+            m_NetworkSettings.NetworkSyncFixedUpdateEvent -= OnNetworkSyncFixedUpdateEvent;
+            m_CustomMessagingManager?.UnregisterNamedMessageHandler(m_MsgNameClient);
+            m_CustomMessagingManager?.UnregisterNamedMessageHandler(m_MsgNameServer);
         }
         /// <summary>
         /// The object has been spawned.
         /// </summary>
         public override void OnNetworkSpawn()
         {
-            m_NetworkSync.NetworkSyncEvent += OnNetworkSyncEvent;
-            m_MsgName = $"{NetworkObjectId}MsgClientLocationMonitor{OwnerClientId}";
+            m_ServerID = NetworkManager.ServerClientId;
+            m_MsgNameClient = $"{OwnerClientId}MsgClientLocationMonitor{NetworkObjectId}";
+            m_MsgNameServer = $"{OwnerClientId}MsgServerLocationMonitor{NetworkObjectId}";
             m_CustomMessagingManager = NetworkManager.Singleton.CustomMessagingManager;
-            if (!IsServer)
+
+            if (IsServer)
+                m_NetworkSync.NetworkSyncEvent += OnNetworkSyncServerEvent;
+            else
+                m_NetworkSettings.NetworkSyncClientEvent += OnNetworkSyncClientEvent;
+
+            if (!IsOwner)
             {
                 if (m_Rigidbody == null)
-                    m_Settings.NetworkSyncUpdateEvent += OnNetworkSyncUpdateEvent;
+                    m_NetworkSettings.NetworkSyncUpdateEvent += OnNetworkSyncUpdateEvent;
                 else
-                    m_Settings.NetworkSyncFixedUpdateEvent += OnNetworkSyncFixedUpdateEvent;
-                m_CustomMessagingManager?.RegisterNamedMessageHandler(m_MsgName, (sender, reader) =>
-                {
-                    Serialize(ref reader);
-                });
+                    m_NetworkSettings.NetworkSyncFixedUpdateEvent += OnNetworkSyncFixedUpdateEvent;
             }
+            m_CustomMessagingManager?.RegisterNamedMessageHandler(IsServer ? m_MsgNameServer : m_MsgNameClient, (sender, reader) =>
+            { Serialize(ref reader); });
             if (m_SynchronizeActiveState && !NetworkObjectPool.SpawnedWithPool(m_GameObject))
-            {
-                if (IsServer)
-                    SetActiveClientRpc(m_GameObject.activeSelf);
-                else if (IsOwner)
-                    SetActiveServerRpc(m_GameObject.activeSelf);
-            }
+                SetActiveRpc(m_GameObject.activeSelf);
+        }
+        /// <summary>
+        /// A event from Photon has been sent.
+        /// </summary>
+        /// <param name="id">The Client networking id that connected.</param>
+        /// <param name="obj">The Player NetworkObject that connected.</param>
+        private void OnPlayerConnected(ulong id, NetworkObjectReference obj)
+        {
+            if (IsServer)
+                SetPositionRotationRpc(m_Transform.rotation, m_Transform.position);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void SetPositionRotationRpc(Quaternion rotation, Vector3 position)
+        {
+            m_Transform.rotation = rotation;
+            m_Transform.position = position;
         }
         /// <summary>
         /// Network broadcast event called from the NetCodeSyncRate component
         /// </summary>
-        private void OnNetworkSyncEvent(List<ulong> clients)
+        private void OnNetworkSyncClientEvent()
         {
-            using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
+            // Error handling if this function still executing after despawning event
+            if (IsClient)
+                using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
+                    if (Serialize())
+                        m_CustomMessagingManager?.SendNamedMessage(m_MsgNameServer, m_ServerID, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+        }
+        /// <summary>
+        /// Network broadcast event called from the NetworkInfo component
+        /// </summary>
+        private void OnNetworkSyncServerEvent(List<ulong> clients)
+        {
+            // Error handling if this function still executing after despawning event
+            if (IsServer)
             {
-                if (Serialize())
-                    m_CustomMessagingManager?.SendNamedMessage(m_MsgName, clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+                using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
+                {
+                    if (Serialize())
+                        m_CustomMessagingManager?.SendNamedMessage(m_MsgNameClient, clients, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+                }
             }
         }
         /// <summary>
         /// Activates or deactivates the GameObject on the network.
         /// </summary>
         /// <param name="active">Should the GameObject be activated?</param>
-        [ServerRpc]
-        private void SetActiveServerRpc(bool active) => SetActiveClientRpc(active);
-
-        [ClientRpc]
-        private void SetActiveClientRpc(bool active) => m_GameObject?.SetActive(active);
+        [Rpc(SendTo.NotMe)]
+        private void SetActiveRpc(bool active) => m_GameObject?.SetActive(active);
         /// <summary>
         /// Updates the remote object's transform values.
         /// </summary>
@@ -156,9 +196,9 @@ namespace GreedyVox.NetCode.Objects
             else
             {
                 if (m_SynchronizePosition)
-                    m_Transform.position = Vector3.MoveTowards(transform.position, m_NetworkPosition, m_Distance * (1.0f / m_Settings.SyncRateClient));
+                    m_Transform.position = Vector3.MoveTowards(transform.position, m_NetworkPosition, m_Distance * (1.0f / m_NetworkSettings.SyncRateClient));
                 if (m_SynchronizeRotation)
-                    m_Transform.rotation = Quaternion.RotateTowards(transform.rotation, m_NetworkRotation, m_Angle * (1.0f / m_Settings.SyncRateClient));
+                    m_Transform.rotation = Quaternion.RotateTowards(transform.rotation, m_NetworkRotation, m_Angle * (1.0f / m_NetworkSettings.SyncRateClient));
             }
         }
         /// <summary>

@@ -41,31 +41,31 @@ namespace GreedyVox.NetCode
         /// </summary>
         private IEnumerator NetworkTimerServer()
         {
-            while (NetworkManager.Singleton.IsServer)
+            while (IsServer)
             {
                 if (NetworkSyncEvent != null)
                 {
                     m_Clients.Clear();
                     foreach (var client in NetworkManager.Singleton.ConnectedClients)
                     {
-                        if (client.Key == NetworkManager.ServerClientId) continue;
-                        float value;
-                        if (m_ClientInfo.TryGetValue(client.Key, out value))
+                        var key = client.Key;
+                        if (NetworkManager.ServerClientId == key) continue;
+                        if (m_ClientInfo.TryGetValue(key, out float value))
                         {
                             value += Time.deltaTime;
                             var timer = GetTimeForLerp(client.Value.PlayerObject.transform.position);
                             if (value > timer && timer < 1.0f)
                             {
                                 value = 0.0f;
-                                m_Clients.Add(client.Key);
+                                m_Clients.Add(key);
                                 if (m_DispalyDebugLog)
                                     Debug.LogFormat("<color=green>ID: [<color=white>{0}</color>] Distance: [<color=white>{1}</color>] Rate: [<color=white>{2}</color>]</color>",
-                                        client.Key,
+                                        key,
                                         Vector3.Distance(m_Transform.position, client.Value.PlayerObject.transform.position),
                                         GetTimeForLerp(client.Value.PlayerObject.transform.position));
                             }
                         }
-                        m_ClientInfo[client.Key] = value;
+                        m_ClientInfo[key] = value;
                     }
                     if (m_Clients.Count > 0) NetworkSyncEvent(m_Clients);
                 }

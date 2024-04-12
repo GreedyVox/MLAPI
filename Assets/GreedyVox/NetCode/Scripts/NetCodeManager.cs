@@ -32,6 +32,7 @@ namespace GreedyVox.NetCode
         }
         private void Start()
         {
+            if (m_NetworkSettings == null) return;
             Connection.OnServerStarted += () =>
             {
                 if (NetworkManager.Singleton.IsHost)
@@ -66,6 +67,7 @@ namespace GreedyVox.NetCode
                 StartCoroutine(m_NetworkSettings.NetworkSyncUpdate());
                 StartCoroutine(m_NetworkSettings.NetworkSyncClient());
                 StartCoroutine(m_NetworkSettings.NetworkSyncServer());
+                StartCoroutine(m_NetworkSettings.NetworkSyncFixedUpdate());
             }
         }
         private void Quit()
