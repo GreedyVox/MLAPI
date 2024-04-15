@@ -218,7 +218,6 @@ namespace GreedyVox.NetCode.Character
             m_AnimatorMonitor.SetItemIDParameter(idx, sid);
             m_AnimatorMonitor.SetItemStateIndexParameter(idx, state, true);
             m_AnimatorMonitor.SetItemSubstateIndexParameter(idx, index, true);
-            SnapAnimator();
         }
         /// <summary>
         /// Sets the initial parameter values.
@@ -227,7 +226,7 @@ namespace GreedyVox.NetCode.Character
         private void SetNetworkSyncEventRpc(float horizontal, float forward, float pitch, float yaw, float speed,
         float height, bool moving, bool aiming, int mid, int aid, int idat, float fdat, RpcParams rpc)
         {
-            m_AnimatorMonitor.SetHorizontalMovementParameter(horizontal, 1);
+            m_AnimatorMonitor.SetMovementSetIDParameter(mid);
             m_AnimatorMonitor.SetForwardMovementParameter(forward, 1);
             m_AnimatorMonitor.SetPitchParameter(pitch, 1);
             m_AnimatorMonitor.SetYawParameter(yaw, 1);
@@ -235,11 +234,9 @@ namespace GreedyVox.NetCode.Character
             m_AnimatorMonitor.SetHeightParameter(height);
             m_AnimatorMonitor.SetMovingParameter(moving);
             m_AnimatorMonitor.SetAimingParameter(aiming);
-            m_AnimatorMonitor.SetMovementSetIDParameter(mid);
             m_AnimatorMonitor.SetAbilityIndexParameter(aid);
             m_AnimatorMonitor.SetAbilityIntDataParameter(idat);
             m_AnimatorMonitor.SetAbilityFloatDataParameter(fdat, 1);
-            SnapAnimator();
         }
         /// <summary>
         /// Reads/writes the continuous animator parameters.
@@ -293,14 +290,8 @@ namespace GreedyVox.NetCode.Character
             if ((_DirtyFlag & (short)ParameterDirtyFlags.AbilityIndex) != 0)
             {
                 ByteUnpacker.ReadValuePacked(reader, out int abilityIndex);
-                // When the animator is snapped the ability index will be reset. 
-                // It may take some time for that value to propagate across the network.
-                // Wait to set the ability index until it is the correct reset value.
-                if (m_SnappedAbilityIndex == -1 || abilityIndex == m_SnappedAbilityIndex)
-                {
-                    m_AnimatorMonitor.SetAbilityIndexParameter(abilityIndex);
-                    m_SnappedAbilityIndex = -1;
-                }
+                m_AnimatorMonitor.SetAbilityIndexParameter(abilityIndex);
+                m_SnappedAbilityIndex = -1;
             }
             if ((_DirtyFlag & (short)ParameterDirtyFlags.AbilityIntData) != 0)
             {

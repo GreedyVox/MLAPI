@@ -96,8 +96,8 @@ namespace GreedyVox.NetCode.Character
         public override void OnNetworkSpawn()
         {
             m_ServerID = NetworkManager.ServerClientId;
-            m_MsgNameClient = $"{NetworkObjectId}MsgClientLookSource{OwnerClientId}";
-            m_MsgNameServer = $"{NetworkObjectId}MsgServerLookSource{OwnerClientId}";
+            m_MsgNameClient = $"{OwnerClientId}MsgClientLookSource{NetworkObjectId}";
+            m_MsgNameServer = $"{OwnerClientId}MsgServerLookSource{NetworkObjectId}";
             m_CustomMessagingManager = NetworkManager.Singleton.CustomMessagingManager;
 
             if (IsServer)
@@ -158,10 +158,12 @@ namespace GreedyVox.NetCode.Character
             {
                 using (m_FastBufferWriter = new FastBufferWriter(FastBufferWriter.GetWriteSize(m_Flag), Allocator.Temp, m_MaxBufferSize))
                     if (IsOwner)
+                    {
                         if (SerializeView())
                             m_CustomMessagingManager?.SendNamedMessageToAll(m_MsgNameClient, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
-                        else if (SerializeView(ref m_Flag))
-                            m_CustomMessagingManager?.SendNamedMessageToAll(m_MsgNameClient, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
+                    }
+                    else if (SerializeView(ref m_Flag))
+                        m_CustomMessagingManager?.SendNamedMessageToAll(m_MsgNameClient, m_FastBufferWriter, NetworkDelivery.UnreliableSequenced);
                 m_Flag = 0;
             }
         }

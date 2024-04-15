@@ -37,7 +37,6 @@ namespace GreedyVox.NetCode.Character
         public override void OnDestroy()
         {
             base.OnDestroy();
-            EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
             EventHandler.UnregisterEvent<Ability, bool>(m_GameObject, "OnCharacterAbilityActive", OnAbilityActive);
             EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", OnPlayerDisconnected);
         }
@@ -58,7 +57,6 @@ namespace GreedyVox.NetCode.Character
         {
             if (IsOwner)
             {
-                EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerConnected", OnPlayerConnected);
                 EventHandler.RegisterEvent<Ability, bool>(m_GameObject, "OnCharacterAbilityActive", OnAbilityActive);
                 EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", OnPlayerDisconnected);
             }
@@ -121,11 +119,27 @@ namespace GreedyVox.NetCode.Character
             }
         }
         /// <summary>
-        /// A player has joined. Ensure the joining player is in sync with the current game state.
+        /// Gets called when message handlers are ready to be registered and the networking is setup.
         /// </summary>
-        /// <param name="id">The Client networking ID that connected.</param>
-        /// <param name="net">The Player networking Object that connected.</param>
-        private void OnPlayerConnected(ulong id, NetworkObjectReference net)
+        public override void OnNetworkSpawn()
+        {
+            if (!IsServer && !IsOwner)
+                OnPlayerConnectedEventRpc();
+        }
+        /// <summary>
+        /// A player connected syncing event sent.
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void OnPlayerConnectedEventRpc(RpcParams rpc = default) =>
+        OnPlayerConnectedRpc(RpcTarget.Single(rpc.Receive.SenderClientId, RpcTargetUse.Temp));
+        /// <summary>
+        /// Sync all players already connected to the server.
+        /// </summary>
+        /// <param name="rotation">The rotation of the player.</param>
+        /// <param name="position">The position of the player.</param>
+        /// <param name="rpc">The client that sent the syncing event.</param>
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void OnPlayerConnectedRpc(RpcParams rpc)
         {
             // Notify the joining player of the ItemIdentifiers that the player has within their inventory.
             if (m_Inventory != null)
