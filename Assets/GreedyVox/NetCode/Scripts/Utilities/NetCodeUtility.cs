@@ -6,7 +6,7 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// Small utility methods that interact with PUN.
+/// Small utility methods that interact with NetCode.
 /// </summary>
 namespace GreedyVox.NetCode.Utilities
 {
@@ -99,7 +99,7 @@ namespace GreedyVox.NetCode.Utilities
             }
             if (!hasID)
             {
-                Debug.LogWarning($"Error: The object {gameObject.name} does not contain a PhotonView or ObjectIdentifier. It will not be able to be sent over the network.");
+                Debug.LogWarning($"Error: The object {gameObject.name} does not contain a NetCode or ObjectIdentifier. It will not be able to be sent over the network.");
                 return (0, false);
             }
             return (id, true);
@@ -114,7 +114,7 @@ namespace GreedyVox.NetCode.Utilities
         public static GameObject RetrieveGameObject(GameObject parent, ulong id, int itemSlotID)
         {
             if (id == 0) return null;
-            // The ID can be a PhotonView, ObjectIdentifier, or Item ID. Search for the ObjectIdentifier first and then the PhotonView.
+            // The ID can be a NetCode, ObjectIdentifier, or Item ID. Search for the ObjectIdentifier first and then the NetCode.
             GameObject gameObject = null;
             if (itemSlotID == -1)
             {
@@ -139,7 +139,7 @@ namespace GreedyVox.NetCode.Utilities
                     }
                     else
                     {
-                        // The object isn't a PhotonView. It could be an ObjectIdentifier.
+                        // The object isn't a NetCode. It could be an ObjectIdentifier.
                         var objectIdentifiers = parent == null
                             ? GameObject.FindObjectsOfType<ObjectIdentifier>()
                             : parent.GetComponentsInChildren<ObjectIdentifier>();

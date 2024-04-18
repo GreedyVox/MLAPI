@@ -35,7 +35,7 @@ namespace GreedyVox.NetCode
         /// Is the character the local player?
         /// </summary>
         /// <returns>True if the character is the local player.</returns>
-        bool INetworkInfo.IsLocalPlayer() => IsOwner;
+        bool INetworkInfo.IsLocalPlayer() => IsLocalPlayer;
         /// <summary>
         /// Does the network instance have authority?
         /// </summary>

@@ -248,7 +248,7 @@ namespace GreedyVox.NetCode.Character
             m_AnimatorMonitor.SetPitchParameter(m_NetworkPitch, 1);
             m_AnimatorMonitor.SetYawParameter(m_NetworkYaw, 1);
             m_AnimatorMonitor.SetSpeedParameter(m_NetworkSpeed, 1);
-            m_AnimatorMonitor.SetAbilityFloatDataParameter(m_NetworkAbilityFloatData, 1);
+            // SnapAnimator();
         }
         /// <summary>
         /// Called several times per second, so that your script can read synchronization data.

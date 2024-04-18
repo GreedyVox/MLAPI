@@ -20,7 +20,7 @@ namespace GreedyVox.NetCode.Objects
             var net = gameObject.GetCachedComponent<NetworkObject>();
             if (net == null)
             {
-                Debug.LogError("Error: A PhotonView must be added to " + gameObject.name + ".");
+                Debug.LogError("Error: A NetCode must be added to " + gameObject.name + ".");
                 enabled = false;
             }
         }

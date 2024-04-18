@@ -3,7 +3,7 @@ using Opsive.UltimateCharacterController.Character;
 namespace GreedyVox.NetCode.Character
 {
     /// <summary>
-    /// Subclasses the AnimatorMonitor for PUN synchronization.
+    /// Subclasses the AnimatorMonitor for NetCode synchronization.
     /// </summary>
     public class NetCodeAnimatorMonitor : AnimatorMonitor
     {

@@ -90,7 +90,7 @@ namespace GreedyVox.NetCode.Game
                 m_ActiveGameObjects.Remove(obj);
         }
         /// <summary>
-        /// Called to get an instance of a prefab. Must return valid, disabled GameObject with PhotonView. Required by IPunPrefabPool.
+        /// Called to get an instance of a prefab. Must return valid, disabled GameObject with NetCode. Required by IPunPrefabPool.
         /// </summary>
         /// <param name="prefabId">The id of this prefab.</param>
         /// <param name="position">The position for the instance.</param>

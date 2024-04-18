@@ -71,11 +71,11 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="forceMagnitude">The magnitude of the force that is applied to the object.</param>
         /// <param name="frames">The number of frames to add the force to.</param>
         /// <param name="radius">The radius of the explosive damage. If 0 then a non-explosive force will be used.</param>
-        /// <param name="sourceNetworkObjectID">The PhotonView ID of the object that did the damage.</param>
+        /// <param name="sourceNetworkObjectID">The NetCode ID of the object that did the damage.</param>
         /// <param name="sourceItemIdentifierID">The ID of the source's Item Identifier.</param>
         /// <param name="sourceSlotID">The ID of the source's slot.</param>
         /// <param name="sourceItemActionID">The ID of the source's ItemAction.</param>
-        /// <param name="hitColliderID">The PhotonView or ObjectIdentifier ID of the Collider that was hit.</param>
+        /// <param name="hitColliderID">The NetCode or ObjectIdentifier ID of the Collider that was hit.</param>
         /// <param name="hitItemSlotID">If the hit collider is an item then the slot ID of the item will be specified.</param>
         public void OnDamage(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius, IDamageSource source, Collider hitCollider)
         {
@@ -110,14 +110,14 @@ namespace GreedyVox.NetCode.Traits
                         originatorNetworkObject = source.SourceOwner.GetCachedComponent<NetworkObject>();
                         if (originatorNetworkObject == null)
                         {
-                            Debug.LogError($"Error: The attacker {source.SourceOwner.name} must have a PhotonView component.");
+                            Debug.LogError($"Error: The attacker {source.SourceOwner.name} must have a NetCode component.");
                             return;
                         }
                     }
                     sourceNetworkObject = originatorNetworkObject;
                 }
             }
-            // A hit collider is not required. If one exists it must have an ObjectIdentifier or PhotonView attached for identification purposes.
+            // A hit collider is not required. If one exists it must have an ObjectIdentifier or NetCode attached for identification purposes.
             (ulong ID, bool) hitColliderPair;
             var hitItemSlotID = -1;
             if (hitCollider != null)
@@ -136,11 +136,11 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="forceMagnitude">The magnitude of the force that is applied to the object.</param>
         /// <param name="frames">The number of frames to add the force to.</param>
         /// <param name="radius">The radius of the explosive damage. If 0 then a non-explosive force will be used.</param>
-        /// <param name="sourceNetworkObjectID">The PhotonView ID of the object that did the damage.</param>
+        /// <param name="sourceNetworkObjectID">The NetCode ID of the object that did the damage.</param>
         /// <param name="sourceItemIdentifierID">The ID of the source's Item Identifier.</param>
         /// <param name="sourceSlotID">The ID of the source's slot.</param>
         /// <param name="sourceItemActionID">The ID of the source's ItemAction.</param>
-        /// <param name="hitColliderID">The PhotonView or ObjectIdentifier ID of the Collider that was hit.</param>
+        /// <param name="hitColliderID">The NetCode or ObjectIdentifier ID of the Collider that was hit.</param>
         /// <param name="hitItemSlotID">If the hit collider is an item then the slot ID of the item will be specified.</param>
         /// 
         [Rpc(SendTo.Everyone)]

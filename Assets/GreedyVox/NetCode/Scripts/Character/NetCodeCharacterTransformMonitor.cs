@@ -1,5 +1,4 @@
-﻿using System.IO.Pipes;
-using Opsive.Shared.Events;
+﻿using Opsive.Shared.Events;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Character;
 using Opsive.UltimateCharacterController.Utility;
@@ -18,7 +17,7 @@ namespace GreedyVox.NetCode.Character
         [Tooltip("Should the transform's scale be synchronized?")]
         [SerializeField] protected bool m_SynchronizeScale;
         [Tooltip("A multiplier to apply to the interpolation destination for remote players.")]
-        [SerializeField] protected float m_RemoteInterpolationMultiplayer = 1.2f;
+        [SerializeField] protected float m_RemoteInterpolationMultiplayer = 3.0f;
         private byte m_Flag;
         private int m_MaxBufferSize;
         private bool m_InitialSync = true;

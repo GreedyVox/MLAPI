@@ -26,9 +26,7 @@ namespace GreedyVox.NetCode
             base.Awake();
             m_AudioSource = GetComponent<AudioSource>();
             if (m_AudioSource == null)
-            {
                 m_AudioSource = gameObject.AddComponent<AudioSource>();
-            }
         }
         private void Start()
         {
@@ -36,25 +34,22 @@ namespace GreedyVox.NetCode
             Connection.OnServerStarted += () =>
             {
                 if (NetworkManager.Singleton.IsHost)
-                {
                     Debug.Log("<color=white>Server Started</color>");
-                }
             };
             Connection.OnClientDisconnectCallback += ID =>
             {
                 m_NetworkSettings?.PlayDisconnect(m_AudioSource);
                 var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
                 EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", ID, net);
-
                 Debug.LogFormat("<color=white>Server Client Disconnected ID: [<b><color=red><b>{0}</b></color></b>]</color>", ID);
             };
             Connection.OnClientConnectedCallback += ID =>
             {
                 m_NetworkSettings?.PlayConnect(m_AudioSource);
                 var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
+                if (net == null) return;
                 net.gameObject.name = $"[{ID}]{net.gameObject.name}[{net.NetworkObjectId}]";
                 EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerConnected", ID, net);
-
                 NetworkLog.LogInfoServer($"<color=white>Server Client Connected {net.gameObject.name} ID: [<b><color=blue><b>{ID}</b></color></b>]</color>");
             };
             if (m_NetworkSettings == null)

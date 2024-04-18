@@ -4,11 +4,11 @@
 // namespace GreedyVox.NetCode.Game
 // {
 //     /// <summary>
-//     /// Manages the character instantiation within a PUN room.
+//     /// Manages the character instantiation within a NetCode room.
 //     /// </summary>
 //     public class SingleCharacterSpawnManager : NetCodeSpawnManagerBase
 //     {
-//         [Tooltip("A reference to the character that PUN should spawn. This character must be setup using the PUN Multiplayer Manager.")]
+//         [Tooltip("A reference to the character that NetCode should spawn. This character must be setup using the NetCode Multiplayer Manager.")]
 //         [SerializeField] protected GameObject m_Character;
 //         public GameObject Character { get { return m_Character; } set { m_Character = value; } }
 //         /// <summary>

@@ -55,8 +55,8 @@ public class NetCodeMenuGUI : NetworkBehaviour
     }
     private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
     {
-        response.Approved = false;
-        response.Reason = "Testing the declined approval message";
+        response.Approved = true;
+        // response.Reason = "Testing the declined approval message";
     }
     private void OnClientDisconnectCallback(ulong obj)
     {

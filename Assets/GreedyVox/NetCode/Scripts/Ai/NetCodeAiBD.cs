@@ -1,5 +1,6 @@
+#if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER_BD_AI
 using BehaviorDesigner.Runtime;
-using Opsive.UltimateCharacterController.Character;
+#endif
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,17 +12,11 @@ namespace GreedyVox.NetCode.Ai
     [DisallowMultipleComponent]
     public class NetCodeAiBD : NetworkBehaviour
     {
+#if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER_BD_AI
         private BehaviorTree m_BehaviorTree;
-        private UltimateCharacterLocomotion m_Locomotion;
-        private void Awake()
-        {
-            m_BehaviorTree = GetComponent<BehaviorTree>();
-            m_Locomotion = GetComponent<UltimateCharacterLocomotion>();
-        }
+        private void Awake() => m_BehaviorTree = GetComponent<BehaviorTree>();
         public override void OnNetworkSpawn()
-        {
-            if (m_Locomotion != null) { m_Locomotion.enabled = IsServer; }
-            if (m_BehaviorTree != null) { m_BehaviorTree.enabled = IsServer; }
-        }
+        { if (m_BehaviorTree != null) m_BehaviorTree.enabled = IsServer; }
+#endif
     }
 }
