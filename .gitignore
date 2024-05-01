@@ -16,6 +16,7 @@ Assets/GreedyVox/*
 !Assets/GreedyVox/NetCode/
 Assets/GreedyVox/NetCode/*
 !Assets/GreedyVox/NetCode/Scripts/
+!Assets/GreedyVox/NetCode/Editor/
 
 # Never ignore Asset meta data
 ![Aa]ssets/**/*.meta
