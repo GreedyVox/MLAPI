@@ -27,6 +27,23 @@ namespace GreedyVox.NetCode.Objects
         private int m_ActionIndex;
         private uint m_CastID;
         private PayloadMagicParticle m_Data;
+        public int NetworkID { get; set; }
+        /// <summary>
+        /// Returns the initialization data that is required when the object spawns. This allows the remote players to initialize the object correctly.
+        /// </summary>
+        /// <returns>The initialization data that is required when the object spawns.</returns>
+        private void Start()
+        {
+            var net = m_Character.GetCachedComponent<NetworkObject>();
+            m_Data = new PayloadMagicParticle()
+            {
+                OwnerID = net == null ? -1L : (long)net.OwnerClientId,
+                SlotID = m_MagicAction.CharacterItem.SlotID,
+                ActionID = m_MagicAction.ID,
+                ActionIndex = m_ActionIndex,
+                CastID = m_CastID
+            };
+        }
         /// <summary>
         /// Sets the spawn data.
         /// </summary>
@@ -46,32 +63,18 @@ namespace GreedyVox.NetCode.Objects
         /// </summary>
         public int MaxBufferSize()
         {
-            return FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
+            return
+                   FastBufferWriter.GetWriteSize(NetworkID) +
+                   FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
                    FastBufferWriter.GetWriteSize(m_Data.CastID) +
                    FastBufferWriter.GetWriteSize(m_Data.SlotID) +
                    FastBufferWriter.GetWriteSize(m_Data.ActionID) +
                    FastBufferWriter.GetWriteSize(m_Data.ActionIndex);
         }
         /// <summary>
-        /// Returns the initialization data that is required when the object spawns. This allows the remote players to initialize the object correctly.
-        /// </summary>
-        /// <returns>The initialization data that is required when the object spawns.</returns>
-        public void OnNetworkSpawn()
-        {
-            var net = m_Character.GetCachedComponent<NetworkObject>();
-            m_Data = new PayloadMagicParticle()
-            {
-                OwnerID = net == null ? -1L : (long)net.OwnerClientId,
-                SlotID = m_MagicAction.CharacterItem.SlotID,
-                ActionID = m_MagicAction.ID,
-                ActionIndex = m_ActionIndex,
-                CastID = m_CastID
-            };
-        }
-        /// <summary>
         /// The object has been spawned, write the payload data.
         /// </summary>
-        public bool Load(out FastBufferWriter writer)
+        public bool PayLoad(out FastBufferWriter writer)
         {
             try
             {
@@ -88,7 +91,7 @@ namespace GreedyVox.NetCode.Objects
         /// <summary>
         /// The object has been spawned, read the payload data.
         /// Initialize the particle.
-        public void Unload(ref FastBufferReader reader, GameObject go)
+        public void PayLoad(in FastBufferReader reader, GameObject go = default)
         {
             if (go == null) return;
             reader.ReadValueSafe(out m_Data);
@@ -100,8 +103,7 @@ namespace GreedyVox.NetCode.Objects
             var magicAction = item.GetItemAction(m_Data.ActionID) as MagicAction;
             if (magicAction == null) return;
             var magicParticle = gameObject.GetCachedComponent<MagicParticle>();
-            if (magicParticle != null)
-                magicParticle.Initialize(magicAction, m_Data.CastID);
+            magicParticle?.Initialize(magicAction, m_Data.CastID);
         }
     }
 }

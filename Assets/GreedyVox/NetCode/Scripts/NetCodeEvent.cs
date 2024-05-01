@@ -25,7 +25,7 @@ namespace GreedyVox.NetCode
         /// <summary>
         /// The player connection disconnected.
         /// </summary>
-        public override void OnNetworkDespawn() => NetworkDespawnEvent?.Invoke();
+        public override void OnNetworkDespawn() { NetworkDespawnEvent?.Invoke(); base.OnNetworkDespawn(); }
         /// <summary>
         /// Gets called when message handlers are ready to be registered and the networking is setup.
         /// </summary>
@@ -36,6 +36,7 @@ namespace GreedyVox.NetCode
             m_Transport = NetworkManager.Singleton.NetworkConfig.NetworkTransport;
             if (IsLocalPlayer && m_Transport != null && m_Coroutine == null)
                 m_Coroutine = StartCoroutine(NetworkTimer());
+            base.OnNetworkSpawn();
         }
         /// <summary>
         /// Send the ping result to be reported.

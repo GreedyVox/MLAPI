@@ -18,8 +18,8 @@ namespace GreedyVox.NetCode
         [Tooltip("The material used to make the object invisible but still cast shadows.")]
         [SerializeField] protected Material m_InvisibleMaterial;
         public Material InvisibleMaterial { get { return m_InvisibleMaterial; } set { m_InvisibleMaterial = value; } }
-        private GameObject m_GameObject;
         private INetworkInfo m_NetworkInfo;
+        private GameObject m_GameObject;
         /// <summary>
         /// Initialize the default values.
         /// </summary>
@@ -83,11 +83,9 @@ namespace GreedyVox.NetCode
         /// </summary>
         public override void OnDestroy()
         {
-            base.OnDestroy();
             if (m_GameObject != null)
-            {
                 EventHandler.UnregisterEvent<ILookSource>(m_GameObject, "OnCharacterAttachLookSource", OnAttachLookSource);
-            }
+            base.OnDestroy();
         }
     }
 }

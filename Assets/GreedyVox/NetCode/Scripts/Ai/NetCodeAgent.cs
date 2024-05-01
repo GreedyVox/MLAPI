@@ -7,6 +7,9 @@ using UnityEngine.AI;
 
 namespace GreedyVox.NetCode.Ai
 {
+    /// <summary>
+    /// Basic testing class for NavMeshAgent and UCC
+    /// </summary>
     public class NetCodeAgent : NetworkBehaviour
     {
         private NavMeshAgent m_NavMeshAgent;

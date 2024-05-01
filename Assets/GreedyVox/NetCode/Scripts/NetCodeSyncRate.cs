@@ -31,6 +31,7 @@ namespace GreedyVox.NetCode
             m_DistanceSendrate = 1.0f / m_FixedSendsPerSecond;
             if (IsServer)
                 StartCoroutine(NetworkTimerServer());
+            base.OnNetworkSpawn();
         }
         public void SetDefaultDistanceCurve() =>
             m_DistanceSendCurve = new AnimationCurve(new Keyframe[2] { new(0.0f, 0.0f), new(1.0f, 1.0f) });

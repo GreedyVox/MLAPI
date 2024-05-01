@@ -76,8 +76,8 @@ namespace GreedyVox.NetCode.Character
         /// </summary>
         public override void OnDestroy()
         {
-            base.OnDestroy();
             EventHandler.UnregisterEvent<ILookSource>(m_GameObject, "OnCharacterAttachLookSource", OnAttachLookSource);
+            base.OnDestroy();
         }
         /// <summary>
         /// The object has been despawned.
@@ -89,6 +89,7 @@ namespace GreedyVox.NetCode.Character
             m_NetworkManager.NetworkSettings.NetworkSyncServerEvent -= OnNetworkSyncServerEvent;
             m_NetworkManager.NetworkSettings.NetworkSyncClientEvent -= OnNetworkSyncClientEvent;
             m_NetworkManager.NetworkSettings.NetworkSyncUpdateEvent -= OnNetworkSyncUpdateEvent;
+            base.OnNetworkDespawn();
         }
         /// <summary>
         /// Gets called when message handlers are ready to be registered and the networking is setup.
@@ -112,6 +113,7 @@ namespace GreedyVox.NetCode.Character
                 m_CustomMessagingManager?.RegisterNamedMessageHandler(IsServer ? m_MsgNameServer : m_MsgNameClient, (sender, reader) =>
                 { SerializeView(ref reader); });
             }
+            base.OnNetworkSpawn();
         }
         /// <summary>
         /// Returns the maximus size for the fast buffer writer

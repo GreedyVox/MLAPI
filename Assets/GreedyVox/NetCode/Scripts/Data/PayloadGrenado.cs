@@ -7,6 +7,8 @@ namespace GreedyVox.NetCode.Data
     {
         public uint OwnerID;
         public string ImpactStateName;
+        public Vector3 Position;
+        public Quaternion Rotation;
         public Vector3 Torque;
         public Vector3 Velocity;
         public int ImpactFrames;
@@ -21,6 +23,8 @@ namespace GreedyVox.NetCode.Data
         {
             serializer.SerializeValue(ref OwnerID);
             serializer.SerializeValue(ref ImpactStateName);
+            serializer.SerializeValue(ref Position);
+            serializer.SerializeValue(ref Rotation);
             serializer.SerializeValue(ref Torque);
             serializer.SerializeValue(ref Velocity);
             serializer.SerializeValue(ref ImpactLayers);

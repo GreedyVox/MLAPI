@@ -11,28 +11,40 @@ public class NetCodeMenuGUI : NetworkBehaviour
     private int m_ElementWidth = 0;
     private UnityTransport m_Transport;
     private Texture2D m_Texture = null;
+    private bool m_IsConnected = false;
     private bool m_ToggleAddress = false;
-    private NetworkManager m_NetworkManager;
     private string m_Address = string.Empty;
     private GUIStyle m_Style = new GUIStyle();
-    private Regex m_IP = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
     private Rect m_WindowAddress, m_WindowConnect, m_WindowDisconnect;
+    private Regex m_IP = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
+    private void Awake() => m_Transport = NetworkManager.GetComponent<UnityTransport>();
+    // private void OnEnable() => NetworkManager.OnClientDisconnectCallback += OnClientDisconnectCallback;
+    // private void OnDisable() => NetworkManager.OnClientDisconnectCallback -= OnClientDisconnectCallback;
+    public override void OnDestroy()
+    {
+        Disconnect();
+        Debug.Log("<color=white>NetCode GUI Destroy</color>");
+        base.OnDestroy();
+    }
     private void Start()
     {
         m_ElementWidth = m_WindowWidth - 25;
         m_WindowConnect = new Rect(2, 2, 200, 25);
         m_WindowDisconnect = new Rect(2, 2, 200, 100);
-        m_Transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-        m_NetworkManager = GetComponent<NetworkManager>();
-        if (m_NetworkManager != null)
-        {
-            m_NetworkManager.ConnectionApprovalCallback = ApprovalCheck;
-            m_NetworkManager.OnClientDisconnectCallback += OnClientDisconnectCallback;
-        }
+    }
+    public override void OnNetworkSpawn()
+    {
+        m_IsConnected = true;
+        base.OnNetworkSpawn();
+    }
+    public override void OnNetworkDespawn()
+    {
+        m_IsConnected = false;
+        base.OnNetworkDespawn();
     }
     private void OnGUI()
     {
-        if (NetworkManager.Singleton.IsConnectedClient)
+        if (NetworkManager.IsConnectedClient)
         {
             if (Event.current.isKey && Event.current.keyCode == KeyCode.F1)
                 Disconnect();
@@ -53,16 +65,16 @@ public class NetCodeMenuGUI : NetworkBehaviour
             m_WindowAddress = GUILayout.Window(3, m_WindowAddress, WindowAddress, "IP ConnectAddress");
         }
     }
-    private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
-    {
-        response.Approved = true;
-        // response.Reason = "Testing the declined approval message";
-    }
-    private void OnClientDisconnectCallback(ulong obj)
-    {
-        if (!m_NetworkManager.IsServer && m_NetworkManager.DisconnectReason != string.Empty)
-            Debug.Log($"Approval Declined Reason: {m_NetworkManager.DisconnectReason}");
-    }
+    // private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+    // {
+    //     response.Approved = true;
+    //     response.Reason = "Testing the declined approval message";
+    // }
+    // private void OnClientDisconnectCallback(ulong obj)
+    // {
+    //     if (!NetworkManager.IsServer && NetworkManager.DisconnectReason != string.Empty)
+    //         Debug.Log($"Approval Declined Reason: {NetworkManager.DisconnectReason}");
+    // }
     #region Windows
     private void WindowConnect(int id)
     {
@@ -129,28 +141,32 @@ public class NetCodeMenuGUI : NetworkBehaviour
     }
     private void StartServer()
     {
-        NetworkManager.Singleton.ConnectionApprovalCallback += ApprovalCheck;
-        // yield return new WaitForSeconds (0.1f);
-        NetworkManager.Singleton.StartServer();
+        Disconnect();
+        // NetworkManager.ConnectionApprovalCallback += ApprovalCheck;
+        NetworkManager.StartServer();
     }
     private void StartClient(bool server)
     {
+        Disconnect();
         if (server)
         {
-            NetworkManager.Singleton.ConnectionApprovalCallback += ApprovalCheck;
+            // NetworkManager.ConnectionApprovalCallback += ApprovalCheck;
             // Server host client will bypass the callback, joining clients will be approved.
-            NetworkManager.Singleton.StartHost();
+            NetworkManager.StartHost();
         }
-        else { NetworkManager.Singleton.StartClient(); }
+        else { NetworkManager.StartClient(); }
     }
     public void Disconnect()
     {
-        NetworkManager.Singleton.Shutdown();
-        NetworkManager.Singleton.ConnectionApprovalCallback -= ApprovalCheck;
+        if (m_IsConnected)
+        {
+            NetworkManager.Shutdown();
+            // NetworkManager.ConnectionApprovalCallback -= ApprovalCheck;
+        }
     }
     private void Quit()
     {
-        NetworkManager.Singleton.ConnectionApprovalCallback -= ApprovalCheck;
+        Disconnect();
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else

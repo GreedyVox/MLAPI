@@ -41,7 +41,7 @@ namespace GreedyVox.NetCode
                 m_NetworkSettings?.PlayDisconnect(m_AudioSource);
                 var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
                 EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", ID, net);
-                Debug.LogFormat("<color=white>Server Client Disconnected ID: [<b><color=red><b>{0}</b></color></b>]</color>", ID);
+                Debug.Log($"<color=white>Server Client Disconnected ID: [<b><color=red><b>{ID}</b></color></b>]</color>");
             };
             Connection.OnClientConnectedCallback += ID =>
             {

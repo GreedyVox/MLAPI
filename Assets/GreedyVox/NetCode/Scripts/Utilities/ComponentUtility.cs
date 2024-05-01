@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace GreedyVox.NetCode.Utilities
@@ -5,9 +6,12 @@ namespace GreedyVox.NetCode.Utilities
     public sealed class ComponentUtility
     {
         public static bool HasComponent<T>(GameObject go)
+        where T : Component => go?.GetComponent<T>() != null;
+        public static bool HasComponent<T>(GameObject go, out Component com)
         where T : Component
         {
-            return go?.GetComponent<T>() != null;
+            com = go?.GetComponent<T>();
+            return com != null;
         }
         public static void CopyValues<T>(T from, T to)
         where T : Component
@@ -20,6 +24,17 @@ namespace GreedyVox.NetCode.Utilities
         {
             var json = JsonUtility.ToJson(from);
             JsonUtility.FromJsonOverwrite(json, to);
+        }
+        public static bool TryCopyValues<T>(T from, T to)
+        where T : Component
+        {
+            try
+            {
+                var json = JsonUtility.ToJson(from);
+                JsonUtility.FromJsonOverwrite(json, to);
+                return true;
+            }
+            catch (Exception e) { Debug.LogException(e); return false; }
         }
         public static void RemoveCopyValues<T>(T from, T to)
         where T : Component
@@ -34,6 +49,29 @@ namespace GreedyVox.NetCode.Utilities
             var json = JsonUtility.ToJson(from);
             JsonUtility.FromJsonOverwrite(json, to);
             GameObject.DestroyImmediate(from, true);
+        }
+        public static bool TryReplaceCopy<F, T>(GameObject go)
+        where F : Component where T : Component
+        {
+            if (HasComponent<F>(go, out var from)
+             && !HasComponent<T>(go)
+             && TryAddGetComponent<T>(go, out var to)
+             && TryCopyValues(from, to)
+             && TryRemoveComponent(from))
+                return true;
+            return false;
+        }
+        public static bool TryGet<T>(GameObject go, out T obj)
+        where T : class
+        {
+            obj = go?.GetComponent<T>();
+            return obj != null;
+        }
+        public static bool TryGetComponent<T>(GameObject go, out T com)
+        where T : Component
+        {
+            com = go?.GetComponent<T>();
+            return com != null;
         }
         public static bool TryAddComponent<T>(GameObject go)
         where T : Component
@@ -62,9 +100,7 @@ namespace GreedyVox.NetCode.Utilities
         {
             var component = go?.GetComponent<T>();
             if (component == null)
-            {
                 component = go?.AddComponent<T>();
-            }
             return component;
         }
         public static bool TryAddGetComponent<T>(GameObject go, out T com)
@@ -72,9 +108,7 @@ namespace GreedyVox.NetCode.Utilities
         {
             com = go?.GetComponent<T>();
             if (com == null)
-            {
                 com = go?.AddComponent<T>();
-            }
             return com != null;
         }
         public static bool TryRemoveComponent<T>(GameObject go)
@@ -84,6 +118,16 @@ namespace GreedyVox.NetCode.Utilities
             if (component != null)
             {
                 GameObject.DestroyImmediate(component, true);
+                return true;
+            }
+            return false;
+        }
+        public static bool TryRemoveComponent<T>(T com)
+        where T : Component
+        {
+            if (com != null)
+            {
+                GameObject.DestroyImmediate(com, true);
                 return true;
             }
             return false;

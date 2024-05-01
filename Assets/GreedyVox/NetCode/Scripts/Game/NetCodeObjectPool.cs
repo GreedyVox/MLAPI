@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GreedyVox.NetCode.Data;
 using GreedyVox.NetCode.Utilities;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Networking.Game;
@@ -16,10 +17,9 @@ namespace GreedyVox.NetCode.Game
         [Tooltip("An array of objects that can be spawned over the network. Any object that can be spawned on the network must be within this list.")]
         [SerializeField] private List<GameObject> m_SpawnablePrefabs = new List<GameObject>();
         private HashSet<GameObject> m_SpawnableGameObjects = new HashSet<GameObject>();
-        private NetworkObject m_NetworkObject;
         private HashSet<GameObject> m_ActiveGameObjects = new HashSet<GameObject>();
         private HashSet<GameObject> m_SpawnedGameObjects = new HashSet<GameObject>();
-        private Dictionary<string, GameObject> m_ResourceCache = new Dictionary<string, GameObject>();
+        private NetworkObject m_NetworkObject;
         /// Initialize the default values.
         /// </summary>
         private void Start()
@@ -47,19 +47,19 @@ namespace GreedyVox.NetCode.Game
         /// <param name="sceneObject">Is the object owned by the scene? If fales it will be owned by the character.</param>
         protected override void NetworkSpawnInternal(GameObject original, GameObject instanceObject, bool sceneObject)
         {
-            if (!m_SpawnableGameObjects.Contains(original))
-            {
-                Debug.LogError($"Error: Unable to spawn {original.name} on the network. Ensure the object has been added to the NetworkObjectPool.");
-            }
-            else
+            if (m_SpawnableGameObjects.Contains(original))
             {
                 if (!m_SpawnedGameObjects.Contains(instanceObject))
                     m_SpawnedGameObjects.Add(instanceObject);
                 if (!m_ActiveGameObjects.Contains(instanceObject))
                     m_ActiveGameObjects.Add(instanceObject);
                 if (NetworkManager.Singleton.IsServer)
-                    instanceObject.GetCachedComponent<NetworkObject>()?.Spawn();
+                    instanceObject.GetCachedComponent<NetworkObject>()?.Spawn(sceneObject);
+                else if (ComponentUtility.TryGet<IPayload>(instanceObject, out var dat))
+                    NetCodeMessenger.Instance.ClientSpawnObject(original, dat);
+                return;
             }
+            Debug.LogError($"Error: Unable to spawn {original.name} on the network. Ensure the object has been added to the NetworkObjectPool.");
         }
         /// <summary>
         /// Internal method which destroys the object instance on the network.
@@ -88,25 +88,6 @@ namespace GreedyVox.NetCode.Game
             else { ObjectPool.Destroy(obj); }
             if (m_NetworkObject == null)
                 m_ActiveGameObjects.Remove(obj);
-        }
-        /// <summary>
-        /// Called to get an instance of a prefab. Must return valid, disabled GameObject with NetCode. Required by IPunPrefabPool.
-        /// </summary>
-        /// <param name="prefabId">The id of this prefab.</param>
-        /// <param name="position">The position for the instance.</param>
-        /// <param name="rotation">The rotation for the instance.</param>
-        /// <returns>A disabled instance to use by Networking or null if the prefabId is unknown.</returns>
-        public GameObject Instantiate(string prefabId, Vector3 position, Quaternion rotation)
-        {
-            if (!m_ResourceCache.TryGetValue(prefabId, out var value))
-            {
-                value = (GameObject)Resources.Load(prefabId, typeof(GameObject));
-                m_ResourceCache.Add(prefabId, value);
-            }
-            // Networking requires the instantiated object to be deactivated.
-            var obj = ObjectPool.Instantiate(value, position, rotation);
-            obj?.SetActive(true);
-            return obj;
         }
         /// Internal method which returns if the specified object was spawned with the network object pool.
         /// </summary>

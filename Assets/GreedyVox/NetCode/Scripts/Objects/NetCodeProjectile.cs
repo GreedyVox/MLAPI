@@ -9,31 +9,18 @@ using UnityEngine;
 
 namespace GreedyVox.NetCode.Objects
 {
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(NetworkObject))]
     public class NetCodeProjectile : Projectile, IPayload
     {
-        private PayloadProjectile m_Data;
         private ImpactDamageData m_DamageData;
-        /// <summary>
-        /// Returns the maximus size for the fast buffer writer
-        /// </summary>
-        public int MaxBufferSize()
-        {
-            return FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
-                   FastBufferWriter.GetWriteSize(m_Data.ProjectileID) +
-                   FastBufferWriter.GetWriteSize(m_Data.Velocity) +
-                   FastBufferWriter.GetWriteSize(m_Data.Torque) +
-                   FastBufferWriter.GetWriteSize(m_Data.DamageAmount) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactForce) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactLayers) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactStateDisableTimer) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactStateName);
-        }
+        private PayloadProjectile m_Data;
+        public int NetworkID { get; set; }
         /// <summary>
         /// Returns the initialization data that is required when the object spawns. This allows the remote players to initialize the object correctly.
         /// </summary>
         /// <returns>The initialization data that is required when the object spawns.</returns>
-        public void OnNetworkSpawn()
+        private void Start()
         {
             var net = m_Owner.GetCachedComponent<NetworkObject>();
             m_Data = new PayloadProjectile()
@@ -51,9 +38,28 @@ namespace GreedyVox.NetCode.Objects
             };
         }
         /// <summary>
+        /// Returns the maximus size for the fast buffer writer
+        /// </summary>
+        public int MaxBufferSize()
+        {
+            return
+                   FastBufferWriter.GetWriteSize(NetworkID) +
+                   FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
+                   FastBufferWriter.GetWriteSize(m_Data.ProjectileID) +
+                   FastBufferWriter.GetWriteSize(m_Data.Velocity) +
+                   FastBufferWriter.GetWriteSize(m_Data.Torque) +
+                   FastBufferWriter.GetWriteSize(m_Data.DamageAmount) +
+                   FastBufferWriter.GetWriteSize(m_Data.ImpactForce) +
+                   FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
+                   FastBufferWriter.GetWriteSize(m_Data.ImpactLayers) +
+                   FastBufferWriter.GetWriteSize(m_Data.ImpactStateDisableTimer) +
+                   FastBufferWriter.GetWriteSize(m_Data.ImpactStateName);
+        }
+
+        /// <summary>
         /// The object has been spawned, write the payload data.
         /// </summary>
-        public bool Load(out FastBufferWriter writer)
+        public bool PayLoad(out FastBufferWriter writer)
         {
             try
             {
@@ -70,7 +76,7 @@ namespace GreedyVox.NetCode.Objects
         /// <summary>
         /// The object has been spawned. Initialize the projectile.
         /// </summary>
-        public void Unload(ref FastBufferReader reader, GameObject go)
+        public void PayLoad(in FastBufferReader reader, GameObject go = default)
         {
             if (go == null) return;
             reader.ReadValueSafe(out m_Data);

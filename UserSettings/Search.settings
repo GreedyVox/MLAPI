@@ -8,6 +8,9 @@ onBoardingDoNotAskAgain = true
 showPackageIndexes = false
 showStatusBar = false
 scopes = {
+	"last_search.E8DA15E5" = "bullett"
+	"OpenInspectorPreview.E8DA15E5" = "0"
+	"currentGroup.E8DA15E5" = "asset"
 }
 providers = {
 	asset = {
@@ -59,6 +62,7 @@ providers = {
 objectSelectors = {
 }
 recentSearches = [
+	"bullett"
 ]
 searchItemFavorites = [
 ]

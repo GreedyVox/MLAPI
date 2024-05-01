@@ -17,8 +17,9 @@ namespace GreedyVox.NetCode.Objects
 {
     public class NetCodeItemPickup : ItemPickup, IPayload
     {
-        private PayloadItemPickup m_Data;
         private TrajectoryObject m_TrajectoryObject;
+        private PayloadItemPickup m_Data;
+        public int NetworkID { get; set; }
         /// <summary>
         /// Initialize the default values.
         /// </summary>
@@ -28,21 +29,9 @@ namespace GreedyVox.NetCode.Objects
             m_TrajectoryObject = gameObject.GetCachedComponent<TrajectoryObject>();
         }
         /// <summary>
-        /// Returns the maximus size for the fast buffer writer
-        /// </summary>               
-        public int MaxBufferSize()
-        {
-            return FastBufferWriter.GetWriteSize(m_Data.ItemCount) +
-                   FastBufferWriter.GetWriteSize(m_Data.ItemID) +
-                   FastBufferWriter.GetWriteSize(m_Data.ItemAmounts) +
-                   FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
-                   FastBufferWriter.GetWriteSize(m_Data.Velocity) +
-                   FastBufferWriter.GetWriteSize(m_Data.Torque);
-        }
-        /// <summary>
         /// Initialize the default data values.
         /// </summary>
-        public void OnNetworkSpawn()
+        private void Start()
         {
             var net = m_TrajectoryObject?.Owner.GetCachedComponent<NetworkObject>();
             m_Data = new PayloadItemPickup()
@@ -56,9 +45,23 @@ namespace GreedyVox.NetCode.Objects
             };
         }
         /// <summary>
+        /// Returns the maximus size for the fast buffer writer
+        /// </summary>               
+        public int MaxBufferSize()
+        {
+            return
+                   FastBufferWriter.GetWriteSize(NetworkID) +
+                   FastBufferWriter.GetWriteSize(m_Data.ItemCount) +
+                   FastBufferWriter.GetWriteSize(m_Data.ItemID) +
+                   FastBufferWriter.GetWriteSize(m_Data.ItemAmounts) +
+                   FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
+                   FastBufferWriter.GetWriteSize(m_Data.Velocity) +
+                   FastBufferWriter.GetWriteSize(m_Data.Torque);
+        }
+        /// <summary>
         /// The object has been spawned, write the payload data.
         /// </summary>
-        public bool Load(out FastBufferWriter writer)
+        public bool PayLoad(out FastBufferWriter writer)
         {
             try
             {
@@ -75,7 +78,7 @@ namespace GreedyVox.NetCode.Objects
         /// <summary>
         /// The object has been spawned, read the payload data.
         /// </summary>
-        public void Unload(ref FastBufferReader reader, GameObject go)
+        public void PayLoad(in FastBufferReader reader, GameObject go = default)
         {
             reader.ReadValueSafe(out m_Data);
             // Return the old.

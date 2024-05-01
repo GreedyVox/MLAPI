@@ -36,9 +36,9 @@ namespace GreedyVox.NetCode.Character
         /// </summary>
         public override void OnDestroy()
         {
-            base.OnDestroy();
             EventHandler.UnregisterEvent<Ability, bool>(m_GameObject, "OnCharacterAbilityActive", OnAbilityActive);
             EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", OnPlayerDisconnected);
+            base.OnDestroy();
         }
         /// <summary>
         /// Initialize the default values.
@@ -55,12 +55,24 @@ namespace GreedyVox.NetCode.Character
         /// </summary>
         private void Start()
         {
+
+
+            Debug.LogFormat("<color=red>Game Object Name: [{0}] Is Owner, Server, Client? [{1} : {2} : {3}]</color>", transform.name, IsOwner, IsServer, IsClient);
+
+
+            // if (IsLocalPlayer)
             if (IsOwner)
             {
                 EventHandler.RegisterEvent<Ability, bool>(m_GameObject, "OnCharacterAbilityActive", OnAbilityActive);
                 EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", OnPlayerDisconnected);
             }
-            else { PickupItems(); }
+            else
+            // else if (!IsServer && !IsOwner)
+            {
+                m_Inventory.LoadDefaultLoadout();
+                PickupItems();
+                EventHandler.ExecuteEvent(m_GameObject, "OnCharacterSnapAnimator", false);
+            }
             // AI agents should be disabled on the client.
             if (!NetworkManager.IsServer && m_GameObject.GetCachedComponent<LocalLookSource>() != null)
             {
@@ -125,21 +137,14 @@ namespace GreedyVox.NetCode.Character
         {
             if (!IsServer && !IsOwner)
                 OnPlayerConnectedEventRpc();
+            base.OnNetworkSpawn();
         }
         /// <summary>
         /// A player connected syncing event sent.
         /// </summary>
-        [Rpc(SendTo.Server)]
-        public void OnPlayerConnectedEventRpc(RpcParams rpc = default) =>
-        OnPlayerConnectedRpc(RpcTarget.Single(rpc.Receive.SenderClientId, RpcTargetUse.Temp));
-        /// <summary>
-        /// Sync all players already connected to the server.
-        /// </summary>
-        /// <param name="rotation">The rotation of the player.</param>
-        /// <param name="position">The position of the player.</param>
         /// <param name="rpc">The client that sent the syncing event.</param>
-        [Rpc(SendTo.SpecifiedInParams)]
-        private void OnPlayerConnectedRpc(RpcParams rpc)
+        [Rpc(SendTo.Server)]
+        private void OnPlayerConnectedEventRpc(RpcParams rpc = default)
         {
             // Notify the joining player of the ItemIdentifiers that the player has within their inventory.
             if (m_Inventory != null)
@@ -148,7 +153,8 @@ namespace GreedyVox.NetCode.Character
                 for (int i = 0; i < items.Count; i++)
                 {
                     var item = items[i];
-                    PickupItemIdentifierRpc(item.ItemIdentifier.ID, m_Inventory.GetItemIdentifierAmount(item.ItemIdentifier));
+                    PickupItemIdentifierRpc(item.ItemIdentifier.ID, m_Inventory.GetItemIdentifierAmount(item.ItemIdentifier),
+                                            RpcTarget.Single(rpc.Receive.SenderClientId, RpcTargetUse.Temp));
                     // Usable Items have a separate ItemIdentifiers amount.
                     if (item.DropPrefab != null)
                     {
@@ -163,8 +169,11 @@ namespace GreedyVox.NetCode.Character
                                 if (amount > 0 && module.ItemDefinition != null)
                                 {
                                     var moduleItemIdentifier = module.ItemDefinition.CreateItemIdentifier();
-                                    PickupUsableItemActionRpc(item.ItemIdentifier.ID, item.SlotID, itemActions[j].ID, (module as ActionModule).ModuleGroup.ID,
-                                    (module as ActionModule).ID, m_Inventory.GetItemIdentifierAmount(moduleItemIdentifier), amount);
+                                    PickupUsableItemActionRpc(item.ItemIdentifier.ID, item.SlotID, itemActions[j].ID,
+                                                              (module as ActionModule).ModuleGroup.ID,
+                                                              (module as ActionModule).ID,
+                                                               m_Inventory.GetItemIdentifierAmount(moduleItemIdentifier), amount,
+                                                               RpcTarget.Single(rpc.Receive.SenderClientId, RpcTargetUse.Temp));
                                 }
                             });
                         }
@@ -175,7 +184,8 @@ namespace GreedyVox.NetCode.Character
                 {
                     var item = m_Inventory.GetActiveCharacterItem(i);
                     if (item != null)
-                        EquipUnequipItemRpc(item.ItemIdentifier.ID, i, true);
+                        EquipUnequipItemRpc(item.ItemIdentifier.ID, i, true,
+                                            RpcTarget.Single(rpc.Receive.SenderClientId, RpcTargetUse.Temp));
                 }
             }
             // The active character model needs to be synced.
@@ -189,7 +199,8 @@ namespace GreedyVox.NetCode.Character
                 var activeAbility = m_CharacterLocomotion.ActiveAbilities[i];
                 var dat = activeAbility?.GetNetworkStartData();
                 if (dat != null)
-                    StartAbilityRpc(activeAbility.Index, SerializerObjectArray.Serialize(dat));
+                    StartAbilityRpc(activeAbility.Index, SerializerObjectArray.Serialize(dat),
+                                    RpcTarget.Single(rpc.Receive.SenderClientId, RpcTargetUse.Temp));
             }
 #endif
         }
@@ -217,8 +228,8 @@ namespace GreedyVox.NetCode.Character
         /// </summary>
         /// <param name="abilityIndex">The index of the ability.</param>
         /// <param name="startData">Any data associated with the ability start.</param>
-        [Rpc(SendTo.NotOwner)]
-        private void StartAbilityRpc(int abilityIndex, SerializableObjectArray startData)
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void StartAbilityRpc(int abilityIndex, SerializableObjectArray startData, RpcParams rpc = default)
         {
             var ability = m_CharacterLocomotion.Abilities[abilityIndex];
 #if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER
@@ -232,8 +243,8 @@ namespace GreedyVox.NetCode.Character
         /// </summary>
         /// <param name="itemIdentifierID">The ID of the ItemIdentifiers that should be equipped.</param>
         /// <param name="amount">The number of ItemIdnetifiers to pickup.</param>
-        [Rpc(SendTo.NotOwner)]
-        private void PickupItemIdentifierRpc(uint itemIdentifierID, int amount)
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void PickupItemIdentifierRpc(uint itemIdentifierID, int amount, RpcParams rpc = default)
         {
             var itemIdentifier = ItemIdentifierTracker.GetItemIdentifier(itemIdentifierID);
             if (itemIdentifier != null)
@@ -250,8 +261,9 @@ namespace GreedyVox.NetCode.Character
         /// <param name="moduleAmount">The module amount within the inventory.</param>
         /// <param name="moduleItemIdentifierAmount">The ItemIdentifier amount loaded within the module.</param>
         /// 
-        [Rpc(SendTo.NotOwner)]
-        private void PickupUsableItemActionRpc(uint itemIdentifierID, int slotID, int itemActionID, int moduleGroupID, int moduleID, int moduleAmount, int moduleItemIdentifierAmount)
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void PickupUsableItemActionRpc(uint itemIdentifierID, int slotID, int itemActionID, int moduleGroupID,
+        int moduleID, int moduleAmount, int moduleItemIdentifierAmount, RpcParams rpc = default)
         {
             var itemType = ItemIdentifierTracker.GetItemIdentifier(itemIdentifierID);
             if (itemType == null) return;
@@ -283,15 +295,15 @@ namespace GreedyVox.NetCode.Character
         /// <param name="slotID">The slot of the item that should be equipped.</param>
         /// <param name="equip">Should the item be equipped? If false it will be unequipped.</param>
         public void EquipUnequipItem(uint itemIdentifierID, int slotID, bool equip) =>
-        EquipUnequipItemRpc(itemIdentifierID, slotID, equip);
+        EquipUnequipItemRpc(itemIdentifierID, slotID, equip, RpcTarget.NotOwner);
         /// <summary>
         /// Equips or unequips the item on the network with the specified ItemIdentifier and slot.
         /// </summary>
         /// <param name="itemIdentifierID">The ID of the ItemIdentifier that should be equipped.</param>
         /// <param name="slotID">The slot of the item that should be equipped.</param>
         /// <param name="equip">Should the item be equipped? If false it will be unequipped.</param>
-        [Rpc(SendTo.NotOwner)]
-        private void EquipUnequipItemRpc(uint itemIdentifierID, int slotID, bool equip)
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void EquipUnequipItemRpc(uint itemIdentifierID, int slotID, bool equip, RpcParams rpc = default)
         {
             if (equip)
             {
