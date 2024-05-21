@@ -39,18 +39,24 @@ namespace GreedyVox.NetCode
             Connection.OnClientDisconnectCallback += ID =>
             {
                 m_NetworkSettings?.PlayDisconnect(m_AudioSource);
-                var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
-                EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", ID, net);
-                Debug.Log($"<color=white>Server Client Disconnected ID: [<b><color=red><b>{ID}</b></color></b>]</color>");
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
+                    EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", ID, net);
+                    Debug.Log($"<color=white>Server Client Disconnected ID: [<b><color=red><b>{ID}</b></color></b>]</color>");
+                }
             };
             Connection.OnClientConnectedCallback += ID =>
             {
                 m_NetworkSettings?.PlayConnect(m_AudioSource);
-                var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
-                if (net == null) return;
-                net.gameObject.name = $"[{ID}]{net.gameObject.name}[{net.NetworkObjectId}]";
-                EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerConnected", ID, net);
-                NetworkLog.LogInfoServer($"<color=white>Server Client Connected {net.gameObject.name} ID: [<b><color=blue><b>{ID}</b></color></b>]</color>");
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
+                    if (net == null) return;
+                    net.gameObject.name = $"[{ID}]{net.gameObject.name}[{net.NetworkObjectId}]";
+                    EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerConnected", ID, net);
+                    NetworkLog.LogInfoServer($"<color=white>Server Client Connected {net.gameObject.name} ID: [<b><color=blue><b>{ID}</b></color></b>]</color>");
+                }
             };
             if (m_NetworkSettings == null)
             {

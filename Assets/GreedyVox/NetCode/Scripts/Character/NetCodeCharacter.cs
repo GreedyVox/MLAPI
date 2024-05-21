@@ -1,4 +1,4 @@
-﻿using GreedyVox.NetCode.Utilities;
+using GreedyVox.NetCode.Utilities;
 using Opsive.Shared.Events;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Camera;
@@ -55,19 +55,12 @@ namespace GreedyVox.NetCode.Character
         /// </summary>
         private void Start()
         {
-
-
-            Debug.LogFormat("<color=red>Game Object Name: [{0}] Is Owner, Server, Client? [{1} : {2} : {3}]</color>", transform.name, IsOwner, IsServer, IsClient);
-
-
-            // if (IsLocalPlayer)
             if (IsOwner)
             {
                 EventHandler.RegisterEvent<Ability, bool>(m_GameObject, "OnCharacterAbilityActive", OnAbilityActive);
                 EventHandler.RegisterEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", OnPlayerDisconnected);
             }
             else
-            // else if (!IsServer && !IsOwner)
             {
                 m_Inventory.LoadDefaultLoadout();
                 PickupItems();
