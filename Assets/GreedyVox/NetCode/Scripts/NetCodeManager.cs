@@ -45,6 +45,14 @@ namespace GreedyVox.NetCode
                     EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", ID, net);
                     Debug.Log($"<color=white>Server Client Disconnected ID: [<b><color=red><b>{ID}</b></color></b>]</color>");
                 }
+                else
+                {
+#if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+#else
+                    Application.Quit ();
+#endif
+                }
             };
             Connection.OnClientConnectedCallback += ID =>
             {

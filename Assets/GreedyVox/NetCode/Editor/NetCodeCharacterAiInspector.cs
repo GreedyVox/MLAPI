@@ -69,7 +69,6 @@ namespace GreedyVox.NetCode.Editors
                 }
             }
             // Remove the single player variants of the necessary components.
-            ComponentUtility.TryRemoveComponent<Respawner>(go);
             ComponentUtility.TryRemoveComponent<ItemHandler>(go);
             ComponentUtility.TryRemoveComponent<PlayerInputProxy>(go);
             ComponentUtility.TryRemoveComponentInChildren<UnityInput>(go);
@@ -83,8 +82,8 @@ namespace GreedyVox.NetCode.Editors
             if (ComponentUtility.TryAddComponent<NetworkObject>(go, out var net))
             {
                 net.SpawnWithObservers = true;
+                net.SynchronizeTransform = true;
                 net.AlwaysReplicateAsRoot = false;
-                net.SynchronizeTransform = false;
                 net.ActiveSceneSynchronization = false;
                 net.SceneMigrationSynchronization = false;
                 net.DontDestroyWithOwner = false;
@@ -101,8 +100,10 @@ namespace GreedyVox.NetCode.Editors
                 ComponentUtility.TryAddComponent<NetCodeAttributeMonitor>(go);
             if (ComponentUtility.HasComponent<Health>(go))
                 ComponentUtility.TryAddComponent<NetCodeHealthMonitor>(go);
+            if (ComponentUtility.HasComponent<Respawner>(go))
+                ComponentUtility.TryAddComponent<NetCodeRespawnerMonitor>(go);
 #if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER_BD_AI
-            if (ComponentUtility.TryAddComponent<BehaviorTree>(go))
+            if (ComponentUtility.TryAddGetComponent<BehaviorTree>(go))
                 ComponentUtility.TryAddComponent<NetCodeAiBD>(go);
 #endif
         }

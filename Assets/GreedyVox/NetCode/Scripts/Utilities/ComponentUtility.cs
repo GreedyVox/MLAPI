@@ -61,6 +61,18 @@ namespace GreedyVox.NetCode.Utilities
                 return true;
             return false;
         }
+        public static bool TryReplaceCopy<F, T>(GameObject go, out T to)
+        where F : Component where T : Component
+        {
+            if (HasComponent<F>(go, out var from)
+             && !HasComponent<T>(go)
+             && TryAddGetComponent<T>(go, out to)
+             && TryCopyValues(from, to)
+             && TryRemoveComponent(from))
+                return true;
+            to = default;
+            return false;
+        }
         public static bool TryGet<T>(GameObject go, out T obj)
         where T : class
         {

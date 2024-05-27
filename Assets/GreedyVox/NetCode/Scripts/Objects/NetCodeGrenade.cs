@@ -13,34 +13,17 @@ namespace GreedyVox.NetCode.Objects
     /// Initializes the grenade over the network.
     /// </summary>
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(NetworkObject))]
+    [RequireComponent(typeof(NetworkObject), typeof(NetCodeInfo))]
     public class NetCodeGrenade : Grenade, IPayload
     {
         private ImpactDamageData m_DamageData;
         private PayloadGrenado m_Data;
+        private NetCodeInfo m_NetworkInfo;
         public int NetworkID { get; set; }
-        /// <summary>
-        /// Initialize the default data values.
-        /// </summary>
-        private void Start()
+        protected override void Awake()
         {
-            m_Data = new PayloadGrenado()
-            {
-                OwnerID = m_ID,
-                ImpactStateName = m_ImpactDamageData.ImpactStateName,
-                Position = transform.position,
-                Rotation = transform.rotation,
-                Velocity = m_Velocity,
-                Torque = m_Torque,
-                ImpactFrames = m_ImpactDamageData.ImpactForceFrames,
-                ImpactLayers = m_ImpactLayers.value,
-                ImpactForce = m_ImpactDamageData.ImpactForce,
-                DamageAmount = m_ImpactDamageData.DamageAmount,
-                ImpactStateDisableTimer = m_ImpactDamageData.ImpactStateDisableTimer,
-                ScheduledDeactivation = m_ScheduledDeactivation != null ?
-                (m_ScheduledDeactivation.EndTime - Time.time) : -1,
-                NetCodeObject = m_Owner.GetCachedComponent<NetworkObject>()
-            };
+            base.Awake();
+            m_NetworkInfo = GetComponent<NetCodeInfo>();
         }
         /// <summary>
         /// Returns the maximus size for the fast buffer writer
@@ -50,9 +33,9 @@ namespace GreedyVox.NetCode.Objects
             return
                 FastBufferWriter.GetWriteSize(NetworkID) +
                 FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactStateName) +
-                FastBufferWriter.GetWriteSize(transform.position) +
-                FastBufferWriter.GetWriteSize(transform.rotation) +
+                FastBufferWriter.GetWriteSize(m_Data.ImpactStateName ?? string.Empty) +
+                FastBufferWriter.GetWriteSize(m_Data.Position) +
+                FastBufferWriter.GetWriteSize(m_Data.Rotation) +
                 FastBufferWriter.GetWriteSize(m_Data.Velocity) +
                 FastBufferWriter.GetWriteSize(m_Data.Torque) +
                 FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
@@ -64,6 +47,29 @@ namespace GreedyVox.NetCode.Objects
                 FastBufferWriter.GetWriteSize(m_Data.NetCodeObject);
         }
         /// <summary>
+        /// Initialize the payload data values.
+        /// </summary>
+        private PayloadGrenado PayLoad()
+        {
+            return new PayloadGrenado()
+            {
+                OwnerID = m_ID,
+                ImpactStateName = m_ImpactDamageData.ImpactStateName ?? string.Empty,
+                Position = transform.position,
+                Rotation = transform.rotation,
+                Velocity = m_Velocity,
+                Torque = m_Torque,
+                ImpactFrames = m_ImpactDamageData.ImpactForceFrames,
+                ImpactLayers = m_ImpactLayers.value,
+                ImpactForce = m_ImpactDamageData.ImpactForce,
+                DamageAmount = m_ImpactDamageData.DamageAmount,
+                ImpactStateDisableTimer = m_ImpactDamageData.ImpactStateDisableTimer,
+                ScheduledDeactivation = m_ScheduledDeactivation != null ?
+                (m_ScheduledDeactivation.EndTime - Time.time) : -1,
+                NetCodeObject = m_Owner?.GetCachedComponent<NetworkObject>()
+            };
+        }
+        /// <summary>
         /// The object has been spawned, write the payload data.
         /// </summary>
         public bool PayLoad(out FastBufferWriter writer)
@@ -71,7 +77,7 @@ namespace GreedyVox.NetCode.Objects
             try
             {
                 using (writer = new FastBufferWriter(MaxBufferSize(), Allocator.Temp))
-                    writer.WriteValueSafe(m_Data);
+                    writer.WriteValueSafe(PayLoad());
                 return true;
             }
             catch (Exception e)
@@ -86,16 +92,16 @@ namespace GreedyVox.NetCode.Objects
         public void PayLoad(in FastBufferReader reader, GameObject go = default)
         {
             reader.ReadValueSafe(out m_Data);
-            transform.position = m_Data.Position;
-            transform.rotation = m_Data.Rotation;
             if (m_Data.NetCodeObject.TryGet(out var net))
                 go = net.gameObject;
+            transform.position = m_Data.Position;
+            transform.rotation = m_Data.Rotation;
             m_DamageData ??= new ImpactDamageData();
             m_DamageData.DamageAmount = m_Data.DamageAmount;
             m_DamageData.ImpactForce = m_Data.ImpactForce;
             m_DamageData.ImpactForceFrames = m_Data.ImpactFrames;
             m_ImpactLayers = m_Data.ImpactLayers;
-            m_DamageData.ImpactStateName = m_Data.ImpactStateName;
+            m_DamageData.ImpactStateName = m_Data.ImpactStateName ?? string.Empty;
             m_DamageData.ImpactStateDisableTimer = m_Data.ImpactStateDisableTimer;
             Initialize(m_Data.OwnerID, m_Data.Velocity, m_Data.Torque, go, m_DamageData);
             // The grenade should start cooking.

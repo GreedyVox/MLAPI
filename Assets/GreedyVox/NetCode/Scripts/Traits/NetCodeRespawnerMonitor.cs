@@ -32,9 +32,9 @@ namespace GreedyVox.NetCode.Traits
         /// </summary>
         /// <param name="position">The respawn position.</param>
         /// <param name="rotation">The respawn rotation.</param>
-        /// <param name="transformChange">Was the position or rotation changed?</param>
+        /// <param name="state">Was the position or rotation changed?</param>
         [Rpc(SendTo.NotOwner, RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
-        private void RespawnRpc(Vector3 position, Quaternion rotation, bool transformChange) =>
-        m_Respawner.Respawn(position, rotation, transformChange);
+        private void RespawnRpc(Vector3 position, Quaternion rotation, bool state) =>
+        m_Respawner.Respawn(position, rotation, state);
     }
 }

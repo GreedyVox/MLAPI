@@ -51,8 +51,8 @@ namespace GreedyVox.NetCode
                     if (TryGetNetworkPoolObject(idx, out var go))
                     {
                         var spawn = ObjectPoolBase.Instantiate(go);
-                        NetCodeObjectPool.NetworkSpawn(go, spawn, true);
                         spawn?.GetComponent<IPayload>()?.PayLoad(reader);
+                        NetCodeObjectPool.NetworkSpawn(go, spawn, true);
                     }
                 });
             }
@@ -77,12 +77,10 @@ namespace GreedyVox.NetCode
         public void ClientDespawnObject(ulong id)
         {
             // Client sending custom message to the server using the NetCode Messagenger.
-            using (var writer = new FastBufferWriter(FastBufferWriter.GetWriteSize(id), Allocator.Temp))
-            {
-                BytePacker.WriteValuePacked(writer, id);
-                m_CustomMessagingManager?.SendNamedMessage(
-                    MsgServerNameDespawn, NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
-            }
+            using var writer = new FastBufferWriter(FastBufferWriter.GetWriteSize(id), Allocator.Temp);
+            BytePacker.WriteValuePacked(writer, id);
+            m_CustomMessagingManager?.SendNamedMessage(
+                MsgServerNameDespawn, NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
         }
         /// <summary>
         /// Find the index of the GameObject inside the pooling list

@@ -2,7 +2,7 @@ using Opsive.Shared.Events;
 using Opsive.Shared.Input.VirtualControls;
 using Unity.Netcode;
 
-namespace GreedyVox.NetCode.Input
+namespace GreedyVox.NetCode.Inputs
 {
     public class NetCodeVirtualControlsManager : VirtualControlsManager
     {

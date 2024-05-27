@@ -57,8 +57,8 @@ namespace GreedyVox.NetCode.Editors
             if (ComponentUtility.TryAddComponent<NetworkObject>(go, out var net))
             {
                 net.SpawnWithObservers = true;
+                net.SynchronizeTransform = true;
                 net.AlwaysReplicateAsRoot = false;
-                net.SynchronizeTransform = false;
                 net.ActiveSceneSynchronization = false;
                 net.SceneMigrationSynchronization = false;
                 net.DontDestroyWithOwner = false;
