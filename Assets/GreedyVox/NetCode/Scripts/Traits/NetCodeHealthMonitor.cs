@@ -143,7 +143,7 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="hitColliderID">The NetCode or ObjectIdentifier ID of the Collider that was hit.</param>
         /// <param name="hitItemSlotID">If the hit collider is an item then the slot ID of the item will be specified.</param>
         /// 
-        [Rpc(SendTo.Everyone)]
+        [Rpc(SendTo.Everyone, Delivery = RpcDelivery.Reliable)]
         private void DamageRpc(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius,
         NetworkObjectReference sourceNetworkObject, uint sourceItemIdentifierID, int sourceSlotID, int sourceItemActionID, ulong hitColliderID, int hitItemSlotID)
         {
@@ -204,7 +204,7 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="force">The amount of force applied to the object while taking the damage.</param>
         /// <param name="attackerID">The NetworkObject ID of the GameObject that killed the object.</param>
         /// 
-        [Rpc(SendTo.NotMe)]
+        [Rpc(SendTo.NotMe, Delivery = RpcDelivery.Reliable)]
         private void DieRpc(Vector3 position, Vector3 force, NetworkObjectReference obj)
         {
             obj.TryGet(out var attacker);
@@ -219,7 +219,7 @@ namespace GreedyVox.NetCode.Traits
         /// Adds amount to health and then to the shield if there is still an amount remaining on the network.
         /// </summary>
         /// <param name="amount">The amount of health or shield to add.</param>
-        [Rpc(SendTo.NotMe)]
+        [Rpc(SendTo.NotMe, Delivery = RpcDelivery.Reliable)]
         private void HealRpc(float amount) => m_Health.Heal(amount);
     }
 }
