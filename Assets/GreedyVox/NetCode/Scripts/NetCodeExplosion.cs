@@ -5,7 +5,6 @@
 // using Opsive.UltimateCharacterController.Game;
 // using Opsive.UltimateCharacterController.Networking.Game;
 // using Opsive.UltimateCharacterController.Objects;
-// using Opsive.UltimateCharacterController.Objects.ItemAssist;
 // using Opsive.UltimateCharacterController.Traits;
 // using Opsive.UltimateCharacterController.Utility;
 // using UnityEngine;

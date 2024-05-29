@@ -57,14 +57,10 @@ namespace GreedyVox.NetCode
             Connection.OnClientConnectedCallback += ID =>
             {
                 m_NetworkSettings?.PlayConnect(m_AudioSource);
-                if (NetworkManager.Singleton.IsServer)
-                {
-                    var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
-                    if (net == null) return;
-                    net.gameObject.name = $"[{ID}]{net.gameObject.name}[{net.NetworkObjectId}]";
-                    EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerConnected", ID, net);
-                    NetworkLog.LogInfoServer($"<color=white>Server Client Connected {net.gameObject.name} ID: [<b><color=blue><b>{ID}</b></color></b>]</color>");
-                }
+                var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
+                EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerConnected", ID, net);
+                if (!NetworkManager.Singleton.IsServer) return;
+                NetworkLog.LogInfoServer($"<color=white>Server Client Connected {net?.gameObject?.name} ID: [<b><color=blue><b>{ID}</b></color></b>]</color>");
             };
             if (m_NetworkSettings == null)
             {

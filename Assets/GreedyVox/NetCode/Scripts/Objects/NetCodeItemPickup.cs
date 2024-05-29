@@ -45,18 +45,24 @@ namespace GreedyVox.NetCode.Objects
             };
         }
         /// <summary>
+        /// Initializes the object. This will be called from an object creating the projectile (such as a weapon).
+        /// </summary>
+        /// <param name="id">The id used to differentiate this projectile from others.</param>
+        /// <param name="owner">The object that instantiated the trajectory object.</param>
+        public void Initialize(uint id, GameObject own) { }
+        /// <summary>
         /// Returns the maximus size for the fast buffer writer
         /// </summary>               
         public int MaxBufferSize()
         {
             return
-                   FastBufferWriter.GetWriteSize(NetworkID) +
-                   FastBufferWriter.GetWriteSize(m_Data.ItemCount) +
-                   FastBufferWriter.GetWriteSize(m_Data.ItemID) +
-                   FastBufferWriter.GetWriteSize(m_Data.ItemAmounts) +
-                   FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
-                   FastBufferWriter.GetWriteSize(m_Data.Velocity) +
-                   FastBufferWriter.GetWriteSize(m_Data.Torque);
+            FastBufferWriter.GetWriteSize(NetworkID) +
+            FastBufferWriter.GetWriteSize(m_Data.ItemCount) +
+            FastBufferWriter.GetWriteSize(m_Data.ItemID) +
+            FastBufferWriter.GetWriteSize(m_Data.ItemAmounts) +
+            FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
+            FastBufferWriter.GetWriteSize(m_Data.Velocity) +
+            FastBufferWriter.GetWriteSize(m_Data.Torque);
         }
         /// <summary>
         /// The object has been spawned, write the payload data.

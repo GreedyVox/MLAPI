@@ -16,35 +16,19 @@ namespace GreedyVox.NetCode.Objects
     [RequireComponent(typeof(NetworkObject), typeof(NetCodeInfo))]
     public class NetCodeGrenade : Grenade, IPayload
     {
-        private ImpactDamageData m_DamageData;
+        private const string m_StateName = "Grenade Network Impact";
+        private ImpactDamageData m_DamageData = new();
         private PayloadGrenado m_Data;
-        private NetCodeInfo m_NetworkInfo;
         public int NetworkID { get; set; }
-        protected override void Awake()
-        {
-            base.Awake();
-            m_NetworkInfo = GetComponent<NetCodeInfo>();
-        }
         /// <summary>
-        /// Returns the maximus size for the fast buffer writer
+        /// Initializes the object. This will be called from an object creating the projectile (such as a weapon).
         /// </summary>
-        public int MaxBufferSize()
+        /// <param name="id">The id used to differentiate this projectile from others.</param>
+        /// <param name="owner">The object that instantiated the trajectory object.</param>
+        public void Initialize(uint id, GameObject own)
         {
-            return
-                FastBufferWriter.GetWriteSize(NetworkID) +
-                FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactStateName ?? string.Empty) +
-                FastBufferWriter.GetWriteSize(m_Data.Position) +
-                FastBufferWriter.GetWriteSize(m_Data.Rotation) +
-                FastBufferWriter.GetWriteSize(m_Data.Velocity) +
-                FastBufferWriter.GetWriteSize(m_Data.Torque) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactLayers) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactForce) +
-                FastBufferWriter.GetWriteSize(m_Data.DamageAmount) +
-                FastBufferWriter.GetWriteSize(m_Data.ImpactStateDisableTimer) +
-                FastBufferWriter.GetWriteSize(m_Data.ScheduledDeactivation) +
-                FastBufferWriter.GetWriteSize(m_Data.NetCodeObject);
+            InitializeComponentReferences();
+            Initialize(id, Vector3.zero, Vector3.zero, own, m_DamageData);
         }
         /// <summary>
         /// Initialize the payload data values.
@@ -54,7 +38,6 @@ namespace GreedyVox.NetCode.Objects
             return new PayloadGrenado()
             {
                 OwnerID = m_ID,
-                ImpactStateName = m_ImpactDamageData.ImpactStateName ?? string.Empty,
                 Position = transform.position,
                 Rotation = transform.rotation,
                 Velocity = m_Velocity,
@@ -89,11 +72,11 @@ namespace GreedyVox.NetCode.Objects
         /// <summary>
         /// The object has been spawned, read the payload data.
         /// </summary>
-        public void PayLoad(in FastBufferReader reader, GameObject go = default)
+        public void PayLoad(in FastBufferReader reader, GameObject own = default)
         {
             reader.ReadValueSafe(out m_Data);
             if (m_Data.NetCodeObject.TryGet(out var net))
-                go = net.gameObject;
+                own = net.gameObject;
             transform.position = m_Data.Position;
             transform.rotation = m_Data.Rotation;
             m_DamageData ??= new ImpactDamageData();
@@ -101,13 +84,33 @@ namespace GreedyVox.NetCode.Objects
             m_DamageData.ImpactForce = m_Data.ImpactForce;
             m_DamageData.ImpactForceFrames = m_Data.ImpactFrames;
             m_ImpactLayers = m_Data.ImpactLayers;
-            m_DamageData.ImpactStateName = m_Data.ImpactStateName ?? string.Empty;
+            m_DamageData.ImpactStateName = m_StateName;
             m_DamageData.ImpactStateDisableTimer = m_Data.ImpactStateDisableTimer;
-            Initialize(m_Data.OwnerID, m_Data.Velocity, m_Data.Torque, go, m_DamageData);
+            Initialize(m_Data.OwnerID, m_Data.Velocity, m_Data.Torque, own, m_DamageData);
             // The grenade should start cooking.
             var deactivationTime = m_Data.ScheduledDeactivation;
             if (deactivationTime > 0)
                 m_ScheduledDeactivation = Scheduler.Schedule(deactivationTime, Deactivate);
+        }
+        /// <summary>
+        /// Returns the maximus size for the fast buffer writer
+        /// </summary>
+        public int MaxBufferSize()
+        {
+            return
+            FastBufferWriter.GetWriteSize(NetworkID) +
+            FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
+            FastBufferWriter.GetWriteSize(m_Data.Position) +
+            FastBufferWriter.GetWriteSize(m_Data.Rotation) +
+            FastBufferWriter.GetWriteSize(m_Data.Velocity) +
+            FastBufferWriter.GetWriteSize(m_Data.Torque) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactLayers) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactForce) +
+            FastBufferWriter.GetWriteSize(m_Data.DamageAmount) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactStateDisableTimer) +
+            FastBufferWriter.GetWriteSize(m_Data.ScheduledDeactivation) +
+            FastBufferWriter.GetWriteSize(m_Data.NetCodeObject);
         }
     }
 }

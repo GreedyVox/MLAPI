@@ -59,6 +59,12 @@ namespace GreedyVox.NetCode.Objects
             m_CastID = castID;
         }
         /// <summary>
+        /// Initializes the object. This will be called from an object creating the projectile (such as a weapon).
+        /// </summary>
+        /// <param name="id">The id used to differentiate this projectile from others.</param>
+        /// <param name="owner">The object that instantiated the trajectory object.</param>
+        public void Initialize(uint id, GameObject own) { }
+        /// <summary>
         /// Returns the maximus size for the fast buffer writer
         /// </summary>
         public int MaxBufferSize()

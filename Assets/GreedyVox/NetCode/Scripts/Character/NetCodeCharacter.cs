@@ -62,7 +62,7 @@ namespace GreedyVox.NetCode.Character
             }
             else
             {
-                m_Inventory.LoadDefaultLoadout();
+                // m_Inventory.LoadDefaultLoadout();
                 PickupItems();
                 EventHandler.ExecuteEvent(m_GameObject, "OnCharacterSnapAnimator", false);
             }

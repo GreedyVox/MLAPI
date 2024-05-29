@@ -66,6 +66,7 @@ namespace GreedyVox.NetCode.Editors
             }
             ComponentUtility.TryAddComponent<NetCodeEvent>(go);
             ComponentUtility.TryAddComponent<NetCodeInfo>(go);
+            ComponentUtility.TryAddComponent<NetCodeCharacterName>(go);
             ComponentUtility.TryAddComponent<NetCodeCharacter>(go);
             ComponentUtility.TryAddComponent<NetCodeCharacterAnimatorMonitor>(go);
             ComponentUtility.TryAddComponent<NetCodeCharacterTransformMonitor>(go);

@@ -38,24 +38,15 @@ namespace GreedyVox.NetCode.Objects
             };
         }
         /// <summary>
-        /// Returns the maximus size for the fast buffer writer
+        /// Initializes the object. This will be called from an object creating the projectile (such as a weapon).
         /// </summary>
-        public int MaxBufferSize()
+        /// <param name="id">The id used to differentiate this projectile from others.</param>
+        /// <param name="owner">The object that instantiated the trajectory object.</param>
+        public void Initialize(uint id, GameObject own)
         {
-            return
-                   FastBufferWriter.GetWriteSize(NetworkID) +
-                   FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
-                   FastBufferWriter.GetWriteSize(m_Data.ProjectileID) +
-                   FastBufferWriter.GetWriteSize(m_Data.Velocity) +
-                   FastBufferWriter.GetWriteSize(m_Data.Torque) +
-                   FastBufferWriter.GetWriteSize(m_Data.DamageAmount) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactForce) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactLayers) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactStateDisableTimer) +
-                   FastBufferWriter.GetWriteSize(m_Data.ImpactStateName);
+            InitializeComponentReferences();
+            Initialize(id, Vector3.zero, Vector3.zero, own, m_DamageData);
         }
-
         /// <summary>
         /// The object has been spawned, write the payload data.
         /// </summary>
@@ -88,6 +79,24 @@ namespace GreedyVox.NetCode.Objects
             m_DamageData.ImpactStateName = m_Data.ImpactStateName;
             m_DamageData.ImpactStateDisableTimer = m_Data.ImpactStateDisableTimer;
             Initialize(m_Data.ProjectileID, m_Data.Velocity, m_Data.Torque, go, m_DamageData);
+        }
+        /// <summary>
+        /// Returns the maximus size for the fast buffer writer
+        /// </summary>
+        public int MaxBufferSize()
+        {
+            return
+            FastBufferWriter.GetWriteSize(NetworkID) +
+            FastBufferWriter.GetWriteSize(m_Data.OwnerID) +
+            FastBufferWriter.GetWriteSize(m_Data.ProjectileID) +
+            FastBufferWriter.GetWriteSize(m_Data.Velocity) +
+            FastBufferWriter.GetWriteSize(m_Data.Torque) +
+            FastBufferWriter.GetWriteSize(m_Data.DamageAmount) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactForce) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactFrames) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactLayers) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactStateDisableTimer) +
+            FastBufferWriter.GetWriteSize(m_Data.ImpactStateName);
         }
     }
 }
