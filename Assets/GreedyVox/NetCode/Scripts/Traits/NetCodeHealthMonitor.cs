@@ -20,14 +20,14 @@ namespace GreedyVox.NetCode.Traits
     public class NetCodeHealthMonitor : NetworkBehaviour, INetworkHealthMonitor
     {
         [Tooltip("Spawn objects on death over the network.")]
-        [SerializeField] private GameObject[] m_SpawnObjectsOnDeath;
-        private Health m_Health;
-        private InventoryBase m_Inventory;
-        private GameObject m_GamingObject;
+        [SerializeField] protected GameObject[] m_SpawnObjectsOnDeath;
+        protected Health m_Health;
+        protected InventoryBase m_Inventory;
+        protected GameObject m_GamingObject;
         /// <summary>
         /// Initializes the default values.
         /// </summary>
-        private void Awake()
+        protected virtual void Awake()
         {
             m_GamingObject = gameObject;
             m_Health = m_GamingObject.GetCachedComponent<Health>();
@@ -38,7 +38,7 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="position">The position of the damage.</param>
         /// <param name="direction">The direction that the object took damage from.</param>
         /// </summary>
-        private void SpawnObjectsOnDeath(Vector3 position, Vector3 force)
+        protected virtual void SpawnObjectsOnDeath(Vector3 position, Vector3 force)
         {
             // Spawn any objects on death, such as an explosion if the object is an explosive barrel.
             if (m_SpawnObjectsOnDeath != null)
@@ -77,7 +77,7 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="sourceItemActionID">The ID of the source's ItemAction.</param>
         /// <param name="hitColliderID">The NetCode or ObjectIdentifier ID of the Collider that was hit.</param>
         /// <param name="hitItemSlotID">If the hit collider is an item then the slot ID of the item will be specified.</param>
-        public void OnDamage(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius, IDamageSource source, Collider hitCollider)
+        public virtual void OnDamage(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius, IDamageSource source, Collider hitCollider)
         {
             // A source is not required. If one exists it must have a NetworkObject component attached for identification purposes.
             var sourceSlotID = -1;
@@ -144,7 +144,7 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="hitItemSlotID">If the hit collider is an item then the slot ID of the item will be specified.</param>
         /// 
         [Rpc(SendTo.Everyone, Delivery = RpcDelivery.Reliable)]
-        private void DamageRpc(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius,
+        protected void DamageRpc(float amount, Vector3 position, Vector3 direction, float forceMagnitude, int frames, float radius,
         NetworkObjectReference sourceNetworkObject, uint sourceItemIdentifierID, int sourceSlotID, int sourceItemActionID, ulong hitColliderID, int hitItemSlotID)
         {
             IDamageSource source = null;
@@ -177,7 +177,7 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="position">The position of the damage.</param>
         /// <param name="force">The amount of force applied to the object while taking the damage.</param>
         /// <param name="attacker">The GameObject that killed the character.</param>
-        public void Die(Vector3 position, Vector3 force, GameObject attacker)
+        public virtual void Die(Vector3 position, Vector3 force, GameObject attacker)
         {
             // An attacker is not required. If one exists it must have a NetworkObject component attached for identification purposes.
             NetworkObject attackerObject = null;
@@ -205,7 +205,7 @@ namespace GreedyVox.NetCode.Traits
         /// <param name="attackerID">The NetworkObject ID of the GameObject that killed the object.</param>
         /// 
         [Rpc(SendTo.NotMe, Delivery = RpcDelivery.Reliable)]
-        private void DieRpc(Vector3 position, Vector3 force, NetworkObjectReference obj)
+        protected void DieRpc(Vector3 position, Vector3 force, NetworkObjectReference obj)
         {
             obj.TryGet(out var attacker);
             m_Health.Die(position, force, attacker?.gameObject);
@@ -214,12 +214,12 @@ namespace GreedyVox.NetCode.Traits
         /// Adds amount to health and then to the shield if there is still an amount remaining. Will not go over the maximum health or shield value.
         /// </summary>
         /// <param name="amount">The amount of health or shield to add.</param>
-        public void Heal(float amount) => HealRpc(amount);
+        public virtual void Heal(float amount) => HealRpc(amount);
         /// <summary>
         /// Adds amount to health and then to the shield if there is still an amount remaining on the network.
         /// </summary>
         /// <param name="amount">The amount of health or shield to add.</param>
         [Rpc(SendTo.NotMe, Delivery = RpcDelivery.Reliable)]
-        private void HealRpc(float amount) => m_Health.Heal(amount);
+        protected void HealRpc(float amount) => m_Health.Heal(amount);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using GreedyVox.NetCode.Data;
+using GreedyVox.NetCode.Interfaces;
 using Opsive.Shared.Game;
 using Opsive.Shared.Utility;
 using Opsive.UltimateCharacterController.Inventory;

@@ -1,5 +1,4 @@
 using Opsive.Shared.Game;
-using Opsive.UltimateCharacterController.Traits;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -18,17 +17,16 @@ namespace GreedyVox.NetCode.Game
         }
         public NetworkObject Instantiate(ulong ID, Vector3 pos, Quaternion rot)
         {
-            var go = ObjectPool.Instantiate(m_Prefab, pos, rot, m_Transform);
-            go?.GetComponent<CharacterRespawner>()?.Respawn(pos, rot, true);
+            var go = ObjectPoolBase.Instantiate(m_Prefab, pos, rot);
             return go?.GetComponent<NetworkObject>();
         }
         public void Destroy(NetworkObject net)
         {
-            var go = net.gameObject;
+            var go = net?.gameObject;
             if (m_IsPooled)
                 ObjectPool.Destroy(go);
             else if (NetworkManager.Singleton.IsServer)
-                go.SetActive(false);
+                go?.SetActive(false);
             else
                 GameObject.Destroy(go);
         }

@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-namespace GreedyVox.NetCode.Data
+namespace GreedyVox.NetCode.Interfaces
 {
     public interface IPayload
     {

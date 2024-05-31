@@ -1,5 +1,5 @@
-﻿using GreedyVox.NetCode.Data;
-using GreedyVox.NetCode.Game;
+﻿using GreedyVox.NetCode.Game;
+using GreedyVox.NetCode.Interfaces;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Networking.Game;
 using Unity.Collections;

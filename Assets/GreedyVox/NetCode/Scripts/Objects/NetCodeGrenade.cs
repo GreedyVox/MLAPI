@@ -1,5 +1,6 @@
 ﻿using System;
 using GreedyVox.NetCode.Data;
+using GreedyVox.NetCode.Interfaces;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Items.Actions.Impact;
 using Opsive.UltimateCharacterController.Objects;

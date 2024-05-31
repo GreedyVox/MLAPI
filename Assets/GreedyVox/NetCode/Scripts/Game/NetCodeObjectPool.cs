@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using GreedyVox.NetCode.Data;
+using GreedyVox.NetCode.Interfaces;
 using GreedyVox.NetCode.Utilities;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Networking.Game;
@@ -14,18 +14,14 @@ namespace GreedyVox.NetCode.Game
     [DisallowMultipleComponent]
     public class NetCodeObjectPool : NetworkObjectPool
     {
-        [Tooltip("An array of objects that can be spawned over the network. Any object that can be spawned on the network must be within this list.")]
-        [SerializeField] private List<GameObject> m_SpawnablePrefabs = new List<GameObject>();
-        private HashSet<GameObject> m_SpawnableGameObjects = new HashSet<GameObject>();
-        private HashSet<GameObject> m_ActiveGameObjects = new HashSet<GameObject>();
-        private HashSet<GameObject> m_SpawnedGameObjects = new HashSet<GameObject>();
+        private HashSet<GameObject> m_SpawnableGameObjects = new();
+        private HashSet<GameObject> m_SpawnedGameObjects = new();
+        private HashSet<GameObject> m_ActiveGameObjects = new();
         private NetworkObject m_NetworkObject;
         /// Initialize the default values.
         /// </summary>
         private void Start()
         {
-            for (int n = 0; n < m_SpawnablePrefabs.Count; n++)
-                SetupSpawnManager(m_SpawnablePrefabs[n], false);
             var pool = FindObjectOfType<ObjectPool>()?.PreloadedPrefabs;
             for (int n = 0; n < pool?.Length; n++)
                 SetupSpawnManager(pool[n].Prefab);

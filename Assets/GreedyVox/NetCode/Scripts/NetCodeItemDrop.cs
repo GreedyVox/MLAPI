@@ -1,4 +1,4 @@
-﻿using GreedyVox.NetCode.Data;
+﻿using GreedyVox.NetCode.Interfaces;
 using Unity.Netcode;
 
 namespace GreedyVox.NetCode

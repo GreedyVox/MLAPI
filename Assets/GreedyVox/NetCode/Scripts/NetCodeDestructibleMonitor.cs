@@ -1,4 +1,4 @@
-﻿using GreedyVox.NetCode.Data;
+﻿using GreedyVox.NetCode.Interfaces;
 using GreedyVox.NetCode.Utilities;
 using Opsive.UltimateCharacterController.Networking.Objects;
 using Opsive.UltimateCharacterController.Objects;
@@ -29,7 +29,7 @@ namespace GreedyVox.NetCode
                 InitializeRpc(m_Destructible.ID, net);
             base.OnNetworkSpawn();
         }
-        [Rpc(SendTo.NotOwner, RequireOwnership = true)]
+        [Rpc(SendTo.NotOwner, RequireOwnership = true, Delivery = RpcDelivery.Reliable)]
         private void InitializeRpc(uint id, NetworkObjectReference obj, RpcParams rpc = default)
         {
             m_Destructible.enabled = true;
@@ -47,7 +47,7 @@ namespace GreedyVox.NetCode
         /// </summary>
         /// <param name="hitPosition">The position of the destruction.</param>
         /// <param name="hitNormal">The normal direction of the destruction.</param>
-        [Rpc(SendTo.NotOwner, RequireOwnership = true)]
+        [Rpc(SendTo.NotOwner, RequireOwnership = true, Delivery = RpcDelivery.Reliable)]
         // private void DestructRpc(Vector3 hitPosition, Vector3 hitNormal) => m_Destructible.Destruct(hitPosition, hitNormal);
         private void DestructRpc(Vector3 hitPosition, Vector3 hitNormal) =>
         m_Destructible.Destruct(hitPosition, hitNormal);
