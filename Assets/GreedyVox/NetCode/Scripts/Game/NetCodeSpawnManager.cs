@@ -23,12 +23,8 @@ namespace GreedyVox.NetCode.Game
         public void Destroy(NetworkObject net)
         {
             var go = net?.gameObject;
-            if (m_IsPooled)
-                ObjectPool.Destroy(go);
-            else if (NetworkManager.Singleton.IsServer)
-                go?.SetActive(false);
-            else
-                GameObject.Destroy(go);
+            if (m_IsPooled) ObjectPool.Destroy(go);
+            else go?.SetActive(false);
         }
     }
 }

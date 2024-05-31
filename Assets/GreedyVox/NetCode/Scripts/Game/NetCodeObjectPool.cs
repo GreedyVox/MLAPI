@@ -14,6 +14,8 @@ namespace GreedyVox.NetCode.Game
     [DisallowMultipleComponent]
     public class NetCodeObjectPool : NetworkObjectPool
     {
+        [Tooltip("An array of objects that can be spawned over the network. These objects will require manually custom pooling.")]
+        [SerializeField] private List<GameObject> m_SpawnablePrefabs = new();
         private HashSet<GameObject> m_SpawnableGameObjects = new();
         private HashSet<GameObject> m_SpawnedGameObjects = new();
         private HashSet<GameObject> m_ActiveGameObjects = new();
@@ -22,6 +24,8 @@ namespace GreedyVox.NetCode.Game
         /// </summary>
         private void Start()
         {
+            for (int n = 0; n < m_SpawnablePrefabs.Count; n++)
+                SetupSpawnManager(m_SpawnablePrefabs[n], false);
             var pool = FindObjectOfType<ObjectPool>()?.PreloadedPrefabs;
             for (int n = 0; n < pool?.Length; n++)
                 SetupSpawnManager(pool[n].Prefab);
