@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace GreedyVox.NetCode.Game
 {
-    public class SpawnManager : NetworkBehaviour
+    public class NetCodeSpawnerManager : NetworkBehaviour
     {
         [SerializeField] private GameObject m_GameObjectAi;
         [SerializeField] private GameObject m_SpawnPoint;
@@ -34,7 +34,7 @@ namespace GreedyVox.NetCode.Game
             if (Physics.Raycast(Camera.main.ScreenPointToRay(
             new Vector3(Screen.width / 2, Screen.height / 2, 0)), out var hit, 100.0f))
                 NetCodeObjectPool.NetworkSpawn(go,
-                ObjectPoolBase.Instantiate(go, hit.point, Quaternion.identity), true);
+                ObjectPoolBase.Instantiate(go, hit.point + Vector3.up * 0.5f, Quaternion.identity), true);
         }
     }
 }

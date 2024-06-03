@@ -50,16 +50,17 @@ namespace GreedyVox.NetCode
 #if UNITY_EDITOR
                     UnityEditor.EditorApplication.isPlaying = false;
 #else
-                    Application.Quit ();
+                    Application.Quit();
 #endif
                 }
             };
             Connection.OnClientConnectedCallback += ID =>
             {
-                m_NetworkSettings?.PlayConnect(m_AudioSource);
+                if (NetworkManager.Singleton.IsClient)
+                    m_NetworkSettings?.PlayConnect(m_AudioSource);
+                if (!NetworkManager.Singleton.IsServer) return;
                 var net = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(ID);
                 EventHandler.ExecuteEvent<ulong, NetworkObjectReference>("OnPlayerConnected", ID, net);
-                if (!NetworkManager.Singleton.IsServer) return;
                 NetworkLog.LogInfoServer($"<color=white>Server Client Connected {net?.gameObject?.name} ID: [<b><color=blue><b>{ID}</b></color></b>]</color>");
             };
             if (m_NetworkSettings == null)
@@ -80,7 +81,7 @@ namespace GreedyVox.NetCode
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
-            Application.Quit ();
+            Application.Quit();
 #endif
         }
     }

@@ -5,46 +5,68 @@ using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Networking.Game;
 using Unity.Netcode;
 using UnityEngine;
+using static Opsive.Shared.Game.ObjectPoolBase;
 
-/// <summary>
-/// Provides a way to synchronize pooled objects over the network.
-/// </summary>
 namespace GreedyVox.NetCode.Game
 {
+    /// <summary>
+    /// Manages synchronization of pooled objects over the network.
+    /// </summary>
     [DisallowMultipleComponent]
     public class NetCodeObjectPool : NetworkObjectPool
     {
         [Tooltip("An array of objects that can be spawned over the network. These objects will require manually custom pooling.")]
-        [SerializeField] private List<GameObject> m_SpawnablePrefabs = new();
-        private HashSet<GameObject> m_SpawnableGameObjects = new();
-        private HashSet<GameObject> m_SpawnedGameObjects = new();
-        private HashSet<GameObject> m_ActiveGameObjects = new();
+        [SerializeField] protected PreloadedPrefab[] m_SpawnablePrefabs;
+        protected HashSet<GameObject> m_SpawnableGameObjects = new();
+        protected HashSet<GameObject> m_SpawnedGameObjects = new();
+        protected HashSet<GameObject> m_ActiveGameObjects = new();
         private NetworkObject m_NetworkObject;
-        /// Initialize the default values.
+        /// <summary>
+        /// Initializes the default values.
         /// </summary>
-        private void Start()
+        protected virtual void Start()
         {
-            for (int n = 0; n < m_SpawnablePrefabs.Count; n++)
-                SetupSpawnManager(m_SpawnablePrefabs[n], false);
-            var pool = FindObjectOfType<ObjectPool>()?.PreloadedPrefabs;
-            for (int n = 0; n < pool?.Length; n++)
-                SetupSpawnManager(pool[n].Prefab);
-        }
-        private void SetupSpawnManager(GameObject go, bool pool = true)
-        {
-            if (ComponentUtility.HasComponent<NetworkObject>(go))
-            {
-                m_SpawnableGameObjects.Add(go);
-                NetworkManager.Singleton.PrefabHandler.AddHandler(go,
-                    new NetCodeSpawnManager(go, transform, pool));
-            }
+            SetupSpawnManager(m_SpawnablePrefabs);
+            SetupSpawnManager(FindObjectOfType<ObjectPool>()?.PreloadedPrefabs);
         }
         /// <summary>
-        /// Internal method which spawns the object over the network. This does not instantiate a new object on the local client.
+        /// Injects a GameObject into the pool manager for networked spawning.
         /// </summary>
-        /// <param name="original">The object that the object was instantiated from.</param>
-        /// <param name="instanceObject">The object that was instantiated from the original object.</param>
-        /// <param name="sceneObject">Is the object owned by the scene? If fales it will be owned by the character.</param>
+        /// <param name="go">The original GameObject to be injected into the pool manager.</param>
+        /// <param name="pool">Specifies whether to use the pool manager for this object.</param>
+        public virtual void SetupSpawnManager(GameObject go, bool pool = true)
+        {
+            if (ComponentUtility.HasComponent<NetworkObject>(go))
+                InjectSpawnManager(new NetCodeSpawnInstance(go, pool), go);
+        }
+        /// <summary>
+        /// Injects multiple GameObjects into the pool manager for networked spawning.
+        /// </summary>
+        /// <param name="list">The array of prefabs to be injected into the pool manager.</param>
+        /// <param name="pool">Specifies whether to use the pool manager for these objects.</param>
+        public virtual void SetupSpawnManager(PreloadedPrefab[] list, bool pool = true)
+        {
+            if (list == null) return;
+            foreach (var obj in list)
+                SetupSpawnManager(obj.Prefab, pool);
+        }
+        /// <summary>
+        /// Injects a GameObject into the pool manager for networked spawning.
+        /// </summary>
+        /// <param name="go">The original GameObject to be injected into the pool manager.</param>
+        /// <param name="inject">The handler responsible for managing the instantiation and handling of networked prefabs.</param>
+        /// <param name="pool">Specifies whether to use the pool manager for this object.</param>
+        public virtual void InjectSpawnManager(INetworkPrefabInstanceHandler inject, GameObject go)
+        {
+            m_SpawnableGameObjects.Add(go);
+            NetworkManager.Singleton.PrefabHandler.AddHandler(go, inject);
+        }
+        /// <summary>
+        /// Spawns an object over the network without instantiating a new object on the local client.
+        /// </summary>
+        /// <param name="original">The original object the instance was created from.</param>
+        /// <param name="instanceObject">The instance object created from the original object.</param>
+        /// <param name="sceneObject">Indicates if the object is owned by the scene. If false, it will be owned by the character.</param>
         protected override void NetworkSpawnInternal(GameObject original, GameObject instanceObject, bool sceneObject)
         {
             if (m_SpawnableGameObjects.Contains(original))
@@ -62,9 +84,9 @@ namespace GreedyVox.NetCode.Game
             Debug.LogError($"Error: Unable to spawn {original.name} on the network. Ensure the object has been added to the NetworkObjectPool.");
         }
         /// <summary>
-        /// Internal method which destroys the object instance on the network.
+        /// Destroys an object instance on the network.
         /// </summary>
-        /// <param name="obj">The object to destroy.</param>
+        /// <param name="obj">The object to be destroyed.</param>
         protected override void DestroyInternal(GameObject obj)
         {
             if (ObjectPool.InstantiatedWithPool(obj))
@@ -73,9 +95,9 @@ namespace GreedyVox.NetCode.Game
                 GameObject.Destroy(obj);
         }
         /// <summary>
-        /// Destroys the object.
+        /// Extends the destruction of the object.
         /// </summary>
-        /// <param name="obj">The object that should be destroyed.</param>
+        /// <param name="obj">The object to be destroyed.</param>
         protected virtual void DestroyInternalExtended(GameObject obj)
         {
             if ((m_NetworkObject = obj.GetComponent<NetworkObject>()) != null && m_NetworkObject.IsSpawned)
@@ -89,10 +111,11 @@ namespace GreedyVox.NetCode.Game
             if (m_NetworkObject == null)
                 m_ActiveGameObjects.Remove(obj);
         }
-        /// Internal method which returns if the specified object was spawned with the network object pool.
+        /// <summary>
+        /// Determines if the specified object was spawned using the network object pool.
         /// </summary>
-        /// <param name="obj">The object instance to determine if was spawned with the object pool.</param>
-        /// <returns>True if the object was spawned with the network object pool.</returns>
+        /// <param name="obj">The object instance to check.</param>
+        /// <returns>True if the object was spawned using the network object pool, otherwise false.</returns>
         protected override bool SpawnedWithPoolInternal(GameObject obj) => m_SpawnedGameObjects.Contains(obj);
     }
 }
