@@ -1,50 +1,41 @@
 using System.Text.RegularExpressions;
+using GreedyVox.ProjectManagers.Events;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class NetCodeMenuGUI : NetworkBehaviour
+public class NetCodeMenuGUI : MonoBehaviour
 {
     [SerializeField][Range(1, 1000)] private int m_WindowWidth = 200;
+    [SerializeField] GameEvent m_LoadScene;
     [SerializeField] GUIStyle m_StyleVersion = null;
     private int m_ElementWidth = 0;
     private UnityTransport m_Transport;
     private Texture2D m_Texture = null;
-    private bool m_IsConnected = false;
     private bool m_ToggleAddress = false;
     private string m_Address = string.Empty;
     private GUIStyle m_Style = new GUIStyle();
     private Rect m_WindowAddress, m_WindowConnect, m_WindowDisconnect;
     private Regex m_IP = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
-    private void Awake() => m_Transport = NetworkManager.GetComponent<UnityTransport>();
+    // private void Awake() => m_Transport = NetworkManager.GetComponent<UnityTransport>();
     // private void OnEnable() => NetworkManager.OnClientDisconnectCallback += OnClientDisconnectCallback;
     // private void OnDisable() => NetworkManager.OnClientDisconnectCallback -= OnClientDisconnectCallback;
-    public override void OnDestroy()
+    private void OnDestroy()
     {
         Disconnect();
         Debug.Log("<color=white>NetCode GUI Destroy</color>");
-        base.OnDestroy();
     }
     private void Start()
     {
         m_ElementWidth = m_WindowWidth - 25;
         m_WindowConnect = new Rect(2, 2, 200, 25);
         m_WindowDisconnect = new Rect(2, 2, 200, 100);
-    }
-    public override void OnNetworkSpawn()
-    {
-        m_IsConnected = true;
-        base.OnNetworkSpawn();
-    }
-    public override void OnNetworkDespawn()
-    {
-        m_IsConnected = false;
-        base.OnNetworkDespawn();
+        m_Transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
     }
     private void OnGUI()
     {
-        if (NetworkManager.IsConnectedClient)
+        if (NetworkManager.Singleton.IsConnectedClient)
         {
             if (Event.current.isKey && Event.current.keyCode == KeyCode.F1)
                 Disconnect();
@@ -99,7 +90,7 @@ public class NetCodeMenuGUI : NetworkBehaviour
         else if (GUILayout.Button("Client", GUILayout.Width(m_ElementWidth)))
         {
             StartClient(false);
-            NetworkLog.LogInfoServer($"<color=white>Client <b>{OwnerClientId}</b> Joined</color>");
+            // NetworkLog.LogInfoServer($"<color=white>Client <b>{OwnerClientId}</b> Joined</color>");
             Debug.Log($"<color=white>Joining Server On <b>{m_Transport?.ConnectionData.Address}</b></color>");
         }
         else if (GUILayout.Button("Server", GUILayout.Width(m_ElementWidth)))
@@ -143,24 +134,26 @@ public class NetCodeMenuGUI : NetworkBehaviour
     {
         Disconnect();
         // NetworkManager.ConnectionApprovalCallback += ApprovalCheck;
-        NetworkManager.StartServer();
+        NetworkManager.Singleton.StartServer();
     }
     private void StartClient(bool server)
     {
+        m_LoadScene?.Raise();
         Disconnect();
         if (server)
         {
             // NetworkManager.ConnectionApprovalCallback += ApprovalCheck;
             // Server host client will bypass the callback, joining clients will be approved.
-            NetworkManager.StartHost();
+            NetworkManager.Singleton.StartHost();
         }
-        else { NetworkManager.StartClient(); }
+        else { NetworkManager.Singleton.StartClient(); }
     }
     public void Disconnect()
     {
-        if (m_IsConnected)
+        if (NetworkManager.Singleton == null) return;
+        if (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsClient)
         {
-            NetworkManager.Shutdown();
+            NetworkManager.Singleton.Shutdown();
             // NetworkManager.ConnectionApprovalCallback -= ApprovalCheck;
         }
     }

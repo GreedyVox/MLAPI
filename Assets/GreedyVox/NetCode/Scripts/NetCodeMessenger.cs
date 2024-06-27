@@ -8,14 +8,18 @@ using UnityEngine;
 
 namespace GreedyVox.NetCode
 {
-    public class NetCodeMessenger : NetworkBehaviour
+    /// <summary>
+    /// Ensure that the NetworkManager is set up in a previous scene for the server and client.
+    /// This setup acts as a bootstrapper, initializing the NetworkManager.Singleton beforehand.
+    /// </summary>
+    public class NetCodeMessenger : MonoBehaviour
     {
         private static NetCodeMessenger _Instance;
         public static NetCodeMessenger Instance { get { return _Instance; } }
-        private ObjectPoolBase.PreloadedPrefab[] m_PreloadedPrefab;
-        private CustomMessagingManager m_CustomMessagingManager;
         private const string MsgServerNameDespawn = "MsgServerDespawnObject";
         private const string MsgServerNameSpawn = "MsgServerSpawnObject";
+        private ObjectPoolBase.PreloadedPrefab[] m_PreloadedPrefabs;
+        private CustomMessagingManager m_CustomMessagingManager;
         /// <summary>
         /// The object has awaken.
         /// </summary>
@@ -24,23 +28,33 @@ namespace GreedyVox.NetCode
             if (_Instance != null && _Instance != this)
                 Destroy(this.gameObject);
             else _Instance = this;
-            m_PreloadedPrefab = FindObjectOfType<ObjectPool>()?.PreloadedPrefabs;
+            m_PreloadedPrefabs ??= FindObjectOfType<ObjectPool>()?.PreloadedPrefabs;
         }
-        public override void OnNetworkDespawn()
+        private void OnEnable()
         {
+            if (NetworkManager.Singleton == null) return;
+            NetworkManager.Singleton.OnClientStarted += NetworkStarting;
+            NetworkManager.Singleton.OnServerStarted += NetworkStarting;
+        }
+        private void OnDisable()
+        {
+            if (NetworkManager.Singleton == null) return;
+            NetworkManager.Singleton.OnClientStarted -= NetworkStarting;
+            NetworkManager.Singleton.OnServerStarted -= NetworkStarting;
             m_CustomMessagingManager?.UnregisterNamedMessageHandler(MsgServerNameDespawn);
-            base.OnNetworkDespawn();
         }
-        public override void OnNetworkSpawn()
+        private void NetworkStarting()
         {
-            m_CustomMessagingManager = NetworkManager.CustomMessagingManager;
-            if (IsServer)
+            if (NetworkManager.Singleton == null) return;
+            m_PreloadedPrefabs ??= FindObjectOfType<ObjectPool>()?.PreloadedPrefabs;
+            m_CustomMessagingManager ??= NetworkManager.Singleton.CustomMessagingManager;
+            if (NetworkManager.Singleton.IsServer)
             {
                 // Listening for client side network pooling calls, then forwards message to despawn the object.
                 m_CustomMessagingManager?.RegisterNamedMessageHandler(MsgServerNameDespawn, (sender, reader) =>
                 {
                     ByteUnpacker.ReadValuePacked(reader, out ulong id);
-                    if (NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(id, out var net)
+                    if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out var net)
                      && NetworkObjectPool.IsNetworkActive())
                         NetworkObjectPool.Destroy(net.gameObject);
                 });
@@ -56,7 +70,6 @@ namespace GreedyVox.NetCode
                     }
                 });
             }
-            base.OnNetworkSpawn();
         }
         /// <summary>
         /// Listening for client side network pooling calls, then forwards message to spawn the object.
@@ -87,8 +100,8 @@ namespace GreedyVox.NetCode
         /// </summary>
         public bool TryGetNetworkPoolObjectIndex(GameObject go, out int idx)
         {
-            for (idx = 0; idx < m_PreloadedPrefab?.Length; idx++)
-                if (m_PreloadedPrefab[idx].Prefab == go)
+            for (idx = 0; idx < m_PreloadedPrefabs?.Length; idx++)
+                if (m_PreloadedPrefabs[idx].Prefab == go)
                     return true;
             idx = default;
             return false;
@@ -98,9 +111,9 @@ namespace GreedyVox.NetCode
         /// </summary>
         public bool TryGetNetworkPoolObject(int idx, out GameObject go)
         {
-            if (idx > -1 && idx < m_PreloadedPrefab?.Length)
+            if (idx > -1 && idx < m_PreloadedPrefabs?.Length)
             {
-                go = m_PreloadedPrefab[idx].Prefab;
+                go = m_PreloadedPrefabs[idx].Prefab;
                 return true;
             }
             go = default;
