@@ -1,6 +1,6 @@
 using System.Collections;
-using GreedyVox.NetCode.Utilities;
 using Opsive.Shared.Game;
+using Opsive.UltimateCharacterController.Traits;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -8,17 +8,12 @@ namespace GreedyVox.NetCode.Game
 {
     public class NetCodeSpawnerManager : NetworkBehaviour
     {
-        [SerializeField] private GameObject m_GameObjectAi;
-        [SerializeField] private GameObject m_SpawnPoint;
-        [SerializeField] private GameObject m_SpawnTest;
+        [SerializeField] private GameObject[] m_GameObjects;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            if (!IsServer || m_GameObjectAi == null || m_SpawnPoint == null) return;
-            var go = GameObject.Instantiate(m_GameObjectAi, m_SpawnPoint.transform.position, Quaternion.identity);
-            if (ComponentUtility.TryAddGetComponent<NetworkObject>(go, out var net)) net.Spawn();
-            if (m_SpawnTest != null)
-                StartCoroutine(UpdateSpawner());
+            if (!IsServer || m_GameObjects == null) return;
+            StartCoroutine(UpdateSpawner());
         }
         private IEnumerator UpdateSpawner()
         {
@@ -26,15 +21,18 @@ namespace GreedyVox.NetCode.Game
             {
                 yield return null;
                 if (Input.GetMouseButtonUp(2))
-                    SpawnObject(m_SpawnTest);
+                    SpawnObject(m_GameObjects[Random.Range(0, m_GameObjects.Length)]);
             }
         }
-        private void SpawnObject(GameObject go)
+        private void SpawnObject(GameObject obj)
         {
             if (Physics.Raycast(Camera.main.ScreenPointToRay(
             new Vector3(Screen.width / 2, Screen.height / 2, 0)), out var hit, 100.0f))
-                NetCodeObjectPool.NetworkSpawn(go,
-                ObjectPoolBase.Instantiate(go, hit.point + Vector3.up * 0.5f, Quaternion.identity), true);
+            {
+                var go = ObjectPoolBase.Instantiate(obj);
+                NetCodeObjectPool.NetworkSpawn(obj, go, true);
+                go.GetComponent<CharacterRespawner>()?.Respawn(hit.point + Vector3.up * 0.5f, Quaternion.identity, true);
+            }
         }
     }
 }

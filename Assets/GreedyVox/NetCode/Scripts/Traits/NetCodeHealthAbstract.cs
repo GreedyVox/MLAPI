@@ -19,14 +19,18 @@ namespace GreedyVox.NetCode.Traits
     public abstract class NetCodeHealthAbstract : NetworkBehaviour, INetworkHealthMonitor
     {
         protected Health m_Health;
+        protected Respawner m_Respawner;
         protected InventoryBase m_Inventory;
         protected GameObject m_GamingObject;
+        protected NetworkObject m_NetCodeObject;
         /// <summary>
         /// Initializes the default values.
         /// </summary>
         protected virtual void Awake()
         {
             m_GamingObject = gameObject;
+            m_Respawner = GetComponent<Respawner>();
+            m_NetCodeObject = GetComponent<NetworkObject>();
             m_Health = m_GamingObject.GetCachedComponent<Health>();
             m_Inventory = m_GamingObject.GetCachedComponent<InventoryBase>();
         }

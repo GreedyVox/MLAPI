@@ -57,6 +57,7 @@ namespace GreedyVox.NetCode.Objects
         public int MaxBufferSize()
         {
             return
+            FastBufferWriter.GetWriteSize<int>() +
             FastBufferWriter.GetWriteSize(NetworkID) +
             FastBufferWriter.GetWriteSize(m_Data.ItemCount) +
             FastBufferWriter.GetWriteSize(m_Data.ItemID) +
@@ -68,12 +69,15 @@ namespace GreedyVox.NetCode.Objects
         /// <summary>
         /// The object has been spawned, write the payload data.
         /// </summary>
-        public bool PayLoad(out FastBufferWriter writer)
+        public bool PayLoad(ref int idx, out FastBufferWriter writer)
         {
             try
             {
                 using (writer = new FastBufferWriter(MaxBufferSize(), Allocator.Temp))
+                {
+                    writer.WriteValueSafe(idx);
                     writer.WriteValueSafe(m_Data);
+                }
                 return true;
             }
             catch (Exception e)

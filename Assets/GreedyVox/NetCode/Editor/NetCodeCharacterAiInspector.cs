@@ -25,9 +25,19 @@ namespace GreedyVox.NetCode.Editors
         private static NetCodeCharacterAiInspector Init() =>
         EditorWindow.GetWindowWithRect<NetCodeCharacterAiInspector>(
         new Rect(Screen.width - 300 / 2, Screen.height - 200 / 2, 300, 200), true, "Network Character Ai");
+        private GUIStyle m_Style = new();
         private Object m_NetworkCharacter;
+        private bool m_RemoverFound = false;
+        private const string IconWarningPath = "d_console.warnicon.sml";
         private const string IconErrorPath = "d_console.erroricon.sml";
         private const string IconIfoPath = "d_console.infoicon.sml";
+        private void OnEnable()
+        {
+            m_Style.wordWrap = true;
+            m_Style.fontSize = 15;
+            m_Style.normal.textColor = Color.yellow;
+            m_Style.alignment = TextAnchor.LowerCenter;
+        }
         private void OnGUI()
         {
             EditorGUILayout.BeginHorizontal();
@@ -46,6 +56,11 @@ namespace GreedyVox.NetCode.Editors
                     ShowNotification(new GUIContent("Finished updating character",
                                          EditorGUIUtility.IconContent(IconIfoPath).image), 15);
                 }
+            }
+            if (m_RemoverFound)
+            {
+                ShowNotification(new GUIContent("Remover script has been replaced", EditorGUIUtility.IconContent(IconWarningPath).image), 15);
+                GUILayout.Label("Please ensure that all events previously utilizing the Remover script are updated to use the NetCodeRemover script.", m_Style);
             }
         }
         /// <summary>
@@ -67,6 +82,7 @@ namespace GreedyVox.NetCode.Editors
                     else abilities.Add(ability);
                     com.Abilities = abilities.ToArray();
                 }
+                com.enabled = true;
             }
             // Remove the single player variants of the necessary components.
             ComponentUtility.TryRemoveComponent<ItemHandler>(go);
@@ -100,6 +116,8 @@ namespace GreedyVox.NetCode.Editors
                 ComponentUtility.TryAddComponent<NetCodeAttributeMonitor>(go);
             if (ComponentUtility.HasComponent<Health>(go))
                 ComponentUtility.TryAddComponent<NetCodeHealthMonitor>(go);
+            if (m_RemoverFound = ComponentUtility.TryRemoveComponent<Remover>(go))
+                ComponentUtility.TryAddComponent<NetCodeRemover>(go);
             if (ComponentUtility.HasComponent<Respawner>(go))
                 ComponentUtility.TryAddComponent<NetCodeRespawnerMonitor>(go);
 #if ULTIMATE_CHARACTER_CONTROLLER_MULTIPLAYER_BD_AI

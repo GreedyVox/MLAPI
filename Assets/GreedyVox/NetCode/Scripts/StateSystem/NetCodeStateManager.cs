@@ -88,7 +88,7 @@ namespace GreedyVox.NetCode
         private void OnStateChange(GameObject character, string state, bool active)
         {
             var net = character.GetCachedComponent<NetworkObject>();
-            if (net == null) return;
+            if (net == null || !net.IsSpawned) return;
             if (m_ActiveCharacterStates.TryGetValue(net, out HashSet<string> activeStates))
             {
                 // Store the active states in a HashSet. This will be stored for all characters.

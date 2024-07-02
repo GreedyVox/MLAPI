@@ -1,4 +1,5 @@
-﻿using Opsive.Shared.Game;
+﻿using GreedyVox.NetCode.Game;
+using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Networking.Game;
 using Opsive.UltimateCharacterController.Objects;
 using Unity.Netcode;
@@ -20,7 +21,11 @@ namespace GreedyVox.NetCode.Traits
             if (IsServer)
             {
                 SpawnObjectsOnDeath(position, force);
-                NetworkObjectPool.Destroy(gameObject);
+                // NetworkObjectPool.Destroy(gameObject);
+                if (m_Respawner != null) return;
+                if (m_NetCodeObject == null)
+                    ObjectPool.Destroy(m_GamingObject);
+                else NetCodeObjectPool.Destroy(m_GamingObject);
             }
         }
         /// <summary>

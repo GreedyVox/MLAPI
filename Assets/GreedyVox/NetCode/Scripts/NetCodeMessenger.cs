@@ -12,7 +12,7 @@ namespace GreedyVox.NetCode
     /// Ensure that the NetworkManager is set up in a previous scene for the server and client.
     /// This setup acts as a bootstrapper, initializing the NetworkManager.Singleton beforehand.
     /// </summary>
-    public class NetCodeMessenger : MonoBehaviour
+    public class NetCodeMessenger : NetworkBehaviour
     {
         private static NetCodeMessenger _Instance;
         public static NetCodeMessenger Instance { get { return _Instance; } }
@@ -53,7 +53,7 @@ namespace GreedyVox.NetCode
                 // Listening for client side network pooling calls, then forwards message to despawn the object.
                 m_CustomMessagingManager?.RegisterNamedMessageHandler(MsgServerNameDespawn, (sender, reader) =>
                 {
-                    ByteUnpacker.ReadValuePacked(reader, out ulong id);
+                    reader.ReadValueSafe(out ulong id);
                     if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out var net)
                      && NetworkObjectPool.IsNetworkActive())
                         NetworkObjectPool.Destroy(net.gameObject);
@@ -61,7 +61,7 @@ namespace GreedyVox.NetCode
                 // Listening for client side network pooling calls, then forwards message to spawn the object.
                 m_CustomMessagingManager?.RegisterNamedMessageHandler(MsgServerNameSpawn, (sender, reader) =>
                 {
-                    ByteUnpacker.ReadValuePacked(reader, out int idx);
+                    reader.ReadValueSafe(out int idx);
                     if (TryGetNetworkPoolObject(idx, out var go))
                     {
                         var spawn = ObjectPoolBase.Instantiate(go);
@@ -77,12 +77,9 @@ namespace GreedyVox.NetCode
         public void ClientSpawnObject(GameObject go, IPayload dat)
         {
             // Client sending custom message to the server using the NetCode Messagenger.
-            if (TryGetNetworkPoolObjectIndex(go, out var idx) && dat.PayLoad(out var writer))
-            {
-                writer.WriteValueSafe(idx);
-                m_CustomMessagingManager?.SendNamedMessage(
-                    MsgServerNameSpawn, NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
-            }
+            if (TryGetNetworkPoolObjectIndex(go, out var idx) && dat.PayLoad(ref idx, out var writer))
+                m_CustomMessagingManager?.SendNamedMessage(MsgServerNameSpawn,
+                NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
         }
         /// <summary>
         /// Listening for client side network pooling calls, then forwards message to despawn the object.
