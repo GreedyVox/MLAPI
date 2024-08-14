@@ -20,7 +20,6 @@ namespace GreedyVox.NetCode.Game
         protected HashSet<GameObject> m_SpawnableGameObjects = new();
         protected HashSet<GameObject> m_SpawnedGameObjects = new();
         protected HashSet<GameObject> m_ActiveGameObjects = new();
-        private NetworkObject m_NetworkObject;
         /// <summary>
         /// Initializes the default values.
         /// </summary>
@@ -91,8 +90,10 @@ namespace GreedyVox.NetCode.Game
         {
             if (ObjectPool.InstantiatedWithPool(obj))
                 DestroyInternalExtended(obj);
-            else
-                GameObject.Destroy(obj);
+            else if (NetworkManager.Singleton.IsServer
+            && obj.TryGetComponent<NetworkObject>(out var net))
+                net.Despawn();
+            else GameObject.Destroy(obj);
         }
         /// <summary>
         /// Extends the destruction of the object.
@@ -100,16 +101,18 @@ namespace GreedyVox.NetCode.Game
         /// <param name="obj">The object to be destroyed.</param>
         protected virtual void DestroyInternalExtended(GameObject obj)
         {
-            if ((m_NetworkObject = obj.GetComponent<NetworkObject>()) != null && m_NetworkObject.IsSpawned)
+            if (obj.TryGetComponent<NetworkObject>(out var net) && net.IsSpawned)
             {
                 if (NetworkManager.Singleton.IsServer)
-                    m_NetworkObject.Despawn();
+                {
+                    net.Despawn();
+                    m_SpawnedGameObjects.Remove(obj);
+                }
                 else if (NetworkManager.Singleton.IsClient)
-                    NetCodeMessenger.Instance.ClientDespawnObject(m_NetworkObject.NetworkObjectId);
+                    NetCodeMessenger.Instance.ClientDespawnObject(net.NetworkObjectId);
             }
             else { ObjectPool.Destroy(obj); }
-            if (m_NetworkObject == null)
-                m_ActiveGameObjects.Remove(obj);
+            m_ActiveGameObjects.Remove(obj);
         }
         /// <summary>
         /// Determines if the specified object was spawned using the network object pool.

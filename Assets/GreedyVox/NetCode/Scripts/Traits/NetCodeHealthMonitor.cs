@@ -2,6 +2,7 @@
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Networking.Game;
 using Opsive.UltimateCharacterController.Objects;
+using Opsive.UltimateCharacterController.Traits;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -21,8 +22,9 @@ namespace GreedyVox.NetCode.Traits
             if (IsServer)
             {
                 SpawnObjectsOnDeath(position, force);
-                // NetworkObjectPool.Destroy(gameObject);
-                if (m_Respawner != null) return;
+                if (TryGetComponent<Respawner>(out var com)
+                && (com.ScheduleRespawnOnDeath || com.ScheduleRespawnOnDisable))
+                    return;
                 if (m_NetCodeObject == null)
                     ObjectPool.Destroy(m_GamingObject);
                 else NetCodeObjectPool.Destroy(m_GamingObject);
@@ -38,7 +40,6 @@ namespace GreedyVox.NetCode.Traits
             // Spawn any objects on death, such as an explosion if the object is an explosive barrel.
             if (m_SpawnObjectsOnDeath != null)
             {
-                Explosion exp;
                 for (int n = 0; n < m_SpawnObjectsOnDeath.Length; n++)
                 {
                     var go = m_SpawnObjectsOnDeath[n];
@@ -49,7 +50,7 @@ namespace GreedyVox.NetCode.Traits
                         continue;
                     }
                     NetworkObjectPool.NetworkSpawn(go, obj, true);
-                    if ((exp = obj.GetCachedComponent<Explosion>()) != null)
+                    if (obj.TryGetComponent<Explosion>(out var exp))
                         exp.Explode(gameObject);
                     var rigs = obj.GetComponentsInChildren<Rigidbody>();
                     for (int i = 0; i < rigs.Length; i++)

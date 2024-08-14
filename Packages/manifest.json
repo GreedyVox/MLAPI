@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.greedyvox.art.department": "file:/mnt/Cloud/GreedyVoxStudios/Packages/com.greedyvox.art.department-1.0.0.tgz",
     "com.greedyvox.program-managers": "file:/mnt/Cloud/GreedyVoxStudios/Packages/com.greedyvox.program-managers-1.1.0.tgz",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.tilemap": "1.0.0",

@@ -36,8 +36,8 @@ namespace GreedyVox.NetCode.Character
         /// </summary>
         public override void OnDestroy()
         {
-            EventHandler.UnregisterEvent<Ability, bool>(m_GameObject, "OnCharacterAbilityActive", OnAbilityActive);
             EventHandler.UnregisterEvent<ulong, NetworkObjectReference>("OnPlayerDisconnected", OnPlayerDisconnected);
+            EventHandler.UnregisterEvent<Ability, bool>(m_GameObject, "OnCharacterAbilityActive", OnAbilityActive);
             base.OnDestroy();
         }
         /// <summary>
@@ -62,7 +62,6 @@ namespace GreedyVox.NetCode.Character
             }
             else
             {
-                // m_Inventory.LoadDefaultLoadout();
                 PickupItems();
                 EventHandler.ExecuteEvent(m_GameObject, "OnCharacterSnapAnimator", false);
             }

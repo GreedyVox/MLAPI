@@ -1,4 +1,5 @@
 using System.Collections;
+using GreedyVox.ProjectManagers.Utils;
 using Opsive.Shared.Game;
 using Opsive.UltimateCharacterController.Traits;
 using Unity.Netcode;
@@ -31,7 +32,8 @@ namespace GreedyVox.NetCode.Game
             {
                 var go = ObjectPoolBase.Instantiate(obj);
                 NetCodeObjectPool.NetworkSpawn(obj, go, true);
-                go.GetComponent<CharacterRespawner>()?.Respawn(hit.point + Vector3.up * 0.5f, Quaternion.identity, true);
+                if (ComponentUtil.TryGetAddComponent<CharacterRespawner>(go, out var com))
+                    com.Respawn(hit.point + Vector3.up * 0.5f, Quaternion.identity, true);
             }
         }
     }

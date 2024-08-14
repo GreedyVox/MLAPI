@@ -53,7 +53,7 @@ namespace GreedyVox.NetCode
                 // Listening for client side network pooling calls, then forwards message to despawn the object.
                 m_CustomMessagingManager?.RegisterNamedMessageHandler(MsgServerNameDespawn, (sender, reader) =>
                 {
-                    reader.ReadValueSafe(out ulong id);
+                    ByteUnpacker.ReadValuePacked(reader, out ulong id);
                     if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out var net)
                      && NetworkObjectPool.IsNetworkActive())
                         NetworkObjectPool.Destroy(net.gameObject);
