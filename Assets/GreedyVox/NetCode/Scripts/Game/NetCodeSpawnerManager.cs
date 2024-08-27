@@ -32,8 +32,8 @@ namespace GreedyVox.NetCode.Game
             {
                 var go = ObjectPoolBase.Instantiate(obj);
                 NetCodeObjectPool.NetworkSpawn(obj, go, true);
-                if (ComponentUtil.TryGetAddComponent<CharacterRespawner>(go, out var com))
-                    com.Respawn(hit.point + Vector3.up * 0.5f, Quaternion.identity, true);
+                if (ComponentUtil.TryGetComponent<Respawner>(go, out var com))
+                    com.Respawn(hit.point, Quaternion.identity, true);
             }
         }
     }

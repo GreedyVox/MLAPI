@@ -12,11 +12,10 @@ namespace GreedyVox.NetCode.Game
     /// <summary>
     /// Manages synchronization of pooled objects over the network.
     /// </summary>
-    [DisallowMultipleComponent]
     public class NetCodeObjectPool : NetworkObjectPool
     {
         [Tooltip("An array of objects that can be spawned over the network. These objects will require manually custom pooling.")]
-        [SerializeField] protected PreloadedPrefab[] m_SpawnablePrefabs;
+        [SerializeField] protected ObjectPoolDataAbstract[] m_InjectObjectPoolData;
         protected HashSet<GameObject> m_SpawnableGameObjects = new();
         protected HashSet<GameObject> m_SpawnedGameObjects = new();
         protected HashSet<GameObject> m_ActiveGameObjects = new();
@@ -25,8 +24,9 @@ namespace GreedyVox.NetCode.Game
         /// </summary>
         protected virtual void Start()
         {
-            SetupSpawnManager(m_SpawnablePrefabs);
             SetupSpawnManager(FindObjectOfType<ObjectPool>()?.PreloadedPrefabs);
+            foreach (var pool in m_InjectObjectPoolData)
+                pool.InjectGameObject(m_SpawnableGameObjects);
         }
         /// <summary>
         /// Injects a GameObject into the pool manager for networked spawning.

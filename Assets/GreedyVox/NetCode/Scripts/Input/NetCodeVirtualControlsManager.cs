@@ -28,7 +28,7 @@ namespace GreedyVox.NetCode.Inputs
         /// </summary>
         /// <param name="id">The Client networking id that entered the room.</param>
         /// <param name="obj">The NetworkObject Player that entered the room.</param>
-        private void OnPlayerConnected(ulong id, NetworkObjectReference obj)
+        protected virtual void OnPlayerConnected(ulong id, NetworkObjectReference obj)
         {
             if (obj.TryGet(out NetworkObject net) && net.IsLocalPlayer)
                 Character = net.gameObject;

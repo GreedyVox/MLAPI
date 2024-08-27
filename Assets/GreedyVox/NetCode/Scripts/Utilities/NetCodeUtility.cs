@@ -132,11 +132,8 @@ namespace GreedyVox.NetCode.Utilities
                 || (objectIdentifier == null && idObjectIDMap.ContainsKey(id)))
                 {
                     // The ID doesn't exist in the cache. Try to find the object.
-                    NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out var hitPhotonView);
-                    if (hitPhotonView != null)
-                    {
-                        gameObject = hitPhotonView.gameObject;
-                    }
+                    if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out var hitPhotonView))
+                        gameObject = hitPhotonView?.gameObject;
                     else
                     {
                         // The object isn't a NetCode. It could be an ObjectIdentifier.
@@ -166,10 +163,7 @@ namespace GreedyVox.NetCode.Utilities
                     if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out NetworkObject net))
                         gameObject = net?.gameObject;
                 }
-                else
-                {
-                    gameObject = objectIdentifier.gameObject;
-                }
+                else { gameObject = objectIdentifier.gameObject; }
             }
             else
             { // The ID is an item.
