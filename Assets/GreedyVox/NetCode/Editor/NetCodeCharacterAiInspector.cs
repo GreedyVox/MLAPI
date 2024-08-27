@@ -10,7 +10,9 @@ using Opsive.Shared.Input;
 using Opsive.UltimateCharacterController.Character;
 using Opsive.UltimateCharacterController.Character.Abilities;
 using Opsive.UltimateCharacterController.Character.Abilities.AI;
+using Opsive.UltimateCharacterController.Game;
 using Opsive.UltimateCharacterController.Networking.Character;
+using Opsive.UltimateCharacterController.Objects;
 using Opsive.UltimateCharacterController.Traits;
 using Unity.Netcode;
 using UnityEditor;
@@ -124,6 +126,33 @@ namespace GreedyVox.NetCode.Editors
             if (ComponentUtility.TryAddGetComponent<BehaviorTree>(go))
                 ComponentUtility.TryAddComponent<NetCodeAiBD>(go);
 #endif
+            // Add the ObjectInspector to any character or ragdoll colliders. This will allow the collider GameObjects to be identifiable over the network.
+            uint maxID = 0;
+            var existingIdentifiers = go.GetComponentsInChildren<ObjectIdentifier>(true);
+            for (int i = 0; i < existingIdentifiers.Length; ++i)
+            {
+                // The collider may be used for a ragdoll. Ragdoll colliders should not contribute to the max id.
+                var collider = existingIdentifiers[i].GetComponent<Collider>();
+                if (collider != null)
+                    if (!collider.isTrigger &&
+                        (collider.gameObject.layer == LayerManager.Enemy ||
+                            (collider.gameObject.layer == LayerManager.SubCharacter && collider.GetComponent<Rigidbody>() != null)))
+                        continue;
+                if (existingIdentifiers[i].ID > maxID)
+                    maxID = existingIdentifiers[i].ID;
+            }
+            // The max available ID has been determined. Add the ObjectIdentifier.
+            var colliders = go.GetComponentsInChildren<Collider>(true);
+            uint IDOffset = 1000000000;
+            for (int i = 0; i < colliders.Length; ++i)
+            {
+                if (colliders[i].isTrigger ||
+                    (colliders[i].gameObject.layer != LayerManager.Enemy &&
+                        (colliders[i].gameObject.layer != LayerManager.SubCharacter || colliders[i].GetComponent<Rigidbody>() == null)))
+                    continue;
+                var objectIdentifier = ComponentUtility.TryAddGetComponent<ObjectIdentifier>(colliders[i].gameObject);
+                objectIdentifier.ID = maxID + IDOffset++;
+            }
         }
     }
 }

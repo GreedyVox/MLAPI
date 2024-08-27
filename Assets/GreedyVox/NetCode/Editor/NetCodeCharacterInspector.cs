@@ -134,8 +134,7 @@ namespace GreedyVox.NetCode.Editors
                         (colliders[i].gameObject.layer != LayerManager.SubCharacter || colliders[i].GetComponent<Rigidbody>() == null)))
                     continue;
                 var objectIdentifier = ComponentUtility.TryAddGetComponent<ObjectIdentifier>(colliders[i].gameObject);
-                objectIdentifier.ID = maxID + IDOffset;
-                IDOffset++;
+                objectIdentifier.ID = maxID + IDOffset++;
             }
         }
     }
